@@ -27,6 +27,14 @@ const topics = [
       { code: "DISAGREE", label: "도입에 반대" }
     ],
     status: "ACTIVE"
+  },
+  {
+    title: "청소년의 소셜미디어 이용 시간을 법으로 제한해야 할까요?",
+    options: [
+      { code: "AGREE", label: "도입에 찬성" },
+      { code: "DISAGREE", label: "도입에 반대" }
+    ],
+    status: "ACTIVE"
   }
 ];
 
