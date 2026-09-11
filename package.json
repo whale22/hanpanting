@@ -1,0 +1,29 @@
+{
+  "name": "hanpanting",
+  "version": "0.1.0",
+  "private": true,
+  "description": "사회·정치 주제에 관해 익명으로 1:1 대화하는 서비스의 기초 프로젝트",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "dev": "node --watch --env-file-if-exists=.env.local server.js",
+    "start": "node --env-file-if-exists=.env.local server.js",
+    "build": "node scripts/check-source.js",
+    "lint": "eslint .",
+    "test": "node --test",
+    "seed": "node --env-file-if-exists=.env.local scripts/seeds.js"
+  },
+  "dependencies": {
+    "@better-auth/mongo-adapter": "1.7.4",
+    "better-auth": "1.7.4",
+    "mongodb": "7.6.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "simpledotcss": "2.3.7"
+  },
+  "devDependencies": {
+    "eslint": "10.10.0"
+  }
+}
