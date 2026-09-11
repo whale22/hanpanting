@@ -156,6 +156,48 @@ const conversationSchema = new Schema(
     // 어떤 정치 주제에 대한 채팅방인지
     topicId: {
       type: Schema.Types.ObjectId,
+      ref: 'Topic',
+      required: true,
+    },
+
+    // 같은 입장끼리인지, 반대 입장끼리인지
+    matchType: {
+      type: String,
+      enum: ['SAME', 'OPPOSITE'],
+      required: true,
+    },
+
+    // 현재 진행 중인지 종료되었는지
+    status: {
+      type: String,
+      enum: ['ACTIVE', 'ENDED'],
+      default: 'ACTIVE',
+    },
+
+    participants: {
+      type: [participantSchema],
+      required: true,
+    },
+
+    endedAt: {
+      type: Date,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// 사용자가 참여했던 최근 채팅방을 빠르게 조회하기 위한 인덱스
+conversationSchema.index({
+  'participants.userId': 1,
+  createdAt: -1,
+});
+
+export const Conversation = mongoose.model(
+  'Conversation',
+  conversationSchema
+)
 ```
 
 Message
@@ -186,5 +228,27 @@ const messageSchema = new Schema(
       type: String,
       required: true,
       trim: true,
-      maxlength
+      maxlength: 1000,
+    },
+  },
+  {
+    // createdAt, updatedAt 자동 생성
+    timestamps: true,
+  }
+);
+
+/*
+ * 특정 채팅방의 메시지를
+ * 최신순으로 조회하기 위한 인덱스
+ */
+messageSchema.index({
+  conversationId: 1,
+  createdAt: -1,
+});
+
+export const Message = mongoose.model(
+  'Message',
+  messageSchema
+);
+
 ```
