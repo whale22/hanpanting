@@ -102,7 +102,7 @@ async function createIndexes(database) {
       partialFilterExpression: { status: "WAITING" }
     },
     { key: { userId: 1, status: 1 } },
-    { key: { topicId: 1, matchingMode: 1, stance: 1, status: 1, createdAt: 1 } }
+    { key: { topicId: 1, matchType: 1, stance: 1, status: 1, createdAt: 1 } }
   ]);
   const conversationsCollection = database.collection(COLLECTIONS.conversations);
   await conversationsCollection.createIndexes([

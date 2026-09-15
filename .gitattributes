@@ -1,3 +1,4 @@
-# Linux 컨테이너에서 실행되는 스크립트의 shebang이 Windows 줄바꿈으로 깨지지 않게 합니다.
-docker/entrypoint.sh text eol=lf
-docker/codex text eol=lf
+*.sh text eol=lf
+Dockerfile text eol=lf
+docker-compose.yml text eol=lf
+docker/*.conf text eol=lf

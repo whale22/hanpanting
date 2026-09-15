@@ -1,9 +1,9 @@
 .git
-.docker
+.gitignore
+.npm-cache
+node_modules
 .env
 .env.*
 !.env.example
-node_modules
-npm-debug.log*
 coverage
-docs
+*.log
