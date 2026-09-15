@@ -43,7 +43,7 @@
 `user`에는 애플리케이션이 소유하는 다음 추가 필드가 있습니다.
 
 - `role`: `USER` 또는 `ADMIN`, 기본값 `USER`
-- `status`: `ONLINE`, `MATCHING`, `ACTIVE`, `SUSPENDED`
+- `status`: `ONLINE`, `WAITING`, `ACTIVE`, `SUSPENDED`
 - `lastLoginAt`: 마지막 로그인 시각, 선택 값
 
 이 필드는 가입 입력으로 변경할 수 없는 서버 소유 필드입니다.

@@ -22,9 +22,9 @@ const userSchema = new Schema(
 
     status: {
       type: String,
-      enum: ['ONLINE', 'MATCHING', 'ACTIVE', 'SUSPENDED'],
+      enum: ['ONLINE', 'WAITING', 'ACTIVE', 'SUSPENDED'],
       // ONLINE: 접속 중
-      // MATCHING: 매칭 대기 중
+      // WAITING: 매칭 대기 중
       // ACTIVE: 채팅 중
       // SUSPENDED: 서버에서 차단
       default: 'ONLINE',

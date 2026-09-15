@@ -14,7 +14,7 @@ export function MatchRequestForm({ topics }) {
       <h2 id="match-application-title">한판 신청하기</h2>
 
       <article>
-        <form className="matching-form">
+        <form action="/match-requests" method="post" className="matching-form">
           <label htmlFor="topicId">주제</label>
           <select id="topicId" name="topicId" defaultValue="" required>
             <option value="" disabled>주제를 선택해 주세요</option>
@@ -50,9 +50,7 @@ export function MatchRequestForm({ topics }) {
           </fieldset>
 
           <button
-            type="button"
-            disabled
-            title="매칭 기능을 연결하면 활성화됩니다."
+            type="submit"
           >
             한판 하기
           </button>

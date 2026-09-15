@@ -4,6 +4,7 @@ import { readFile } from "node:fs/promises";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
+import { createMatchRequest } from "./app/match-request-actions.js";
 import {
   endConversation,
   sendConversationMessage
@@ -202,6 +203,20 @@ async function handleRequest(request, response) {
       "conversationList",
       { conversations, topicsById, userId },
       { session, title: "내 대화방" }
+    );
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/match-requests") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    await createMatchRequest(
+      request,
+      response,
+      session
     );
     return;
   }
