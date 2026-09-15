@@ -8,12 +8,19 @@ const URL_PATTERN =
 
 const DOMAIN_PATTERN =
   /\b[a-z0-9-]+(?:\.[a-z0-9-]+)+\b/i;
-  
+
 function normalizeBasic(content) {
   return content
     .normalize("NFKC")
     .toLowerCase()
     .replace(/\s+/g, "");
+}
+
+function normalizeForWarn(content) {
+  return content
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]/gu, "");
 }
 
 function normalizeForLinkCheck(content) {
@@ -41,15 +48,27 @@ export function containsBannedWord(content) {
   for (const entry of bannedWords) {
     const word = normalizeBasic(entry.word);
 
-    // 1차 검사
+    // 기본 검사
     if (basic.includes(word)) {
       return true;
     }
+    
+    if (entry.level === "warn" && normalizeForWarn(content).includes(word)) {
+      return true;
+    }
 
-    // 위험도가 높은 단어만 2차 검사
+    // 위험도가 높은 단어 2차 검사
     if (
       entry.level === "strict" &&
       containsBannedWordWithGap(basic, word, 5)
+    ) {
+      return true;
+    }
+    
+    // 위험도가 정말 높은 단어 3차 검사
+    if (
+      entry.level === "never" &&
+      containsBannedWordWithGap(basic, word, Infinity)
     ) {
       return true;
     }
