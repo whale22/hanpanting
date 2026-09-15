@@ -15,7 +15,23 @@ export default function Page({
           주제와 입장을 고르고 같은 편 또는 반대편 한 사람과 이야기합니다.
           대화방에서는 매번 새로운 익명 이름을 사용합니다.
         </p>
-        <p className="signed-in">로그인되었습니다. 주제를 골라 보세요.</p>
+        <p className="signed-in">로그인되었습니다. 한판 시작해보세요.</p>
+      </section>
+
+      <section>
+        <h2>나의 한판 이력</h2>
+
+        <article className="history-box">
+          <div>
+            <strong>같은 입장끼리 한판</strong>
+            <p>5회</p>
+          </div>
+
+          <div>
+            <strong>다른 입장끼리 한판</strong>
+            <p>3회</p>
+          </div>
+        </article>
       </section>
 
       {needsConfiguration && (
