@@ -25,6 +25,25 @@ function findParticipant(conversation, userId) {
 }
 
 function MessageItem({ conversation, message, userId }) {
+  if (message.type === "SYSTEM") {
+    return (
+      <li
+        className="message-item system-message"
+        data-message-id={String(message._id)}
+      >
+        <div className="message-body">
+          <p className="message-meta">
+            <strong>{message.senderName ?? "시스템"}</strong>
+            <time dateTime={getMessageDateTime(message.createdAt)}>
+              {formatMessageTime(message.createdAt)}
+            </time>
+          </p>
+          <p className="message-content">{message.content}</p>
+        </div>
+      </li>
+    );
+  }
+
   const sender = findParticipant(conversation, message.senderUserId);
   const isMyMessage = message.senderUserId === userId;
   const senderName = isMyMessage
@@ -74,11 +93,22 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
       data-realtime-chat={isActive ? "true" : undefined}
     >
       <a href="/conversations" className="back-link">← 대화방 목록</a>
-      <p className="eyebrow">{statusLabel}</p>
+      <p className="eyebrow" data-conversation-status>{statusLabel}</p>
       <h1>{topicTitle ?? "종료된 주제"}</h1>
       <p className="conversation-summary">
         {otherParticipant?.anonymousName ?? "익명 사용자"} · {matchTypeLabel}
       </p>
+
+      {isActive ? (
+        <form
+          action={`/conversations/${String(conversation._id)}/end`}
+          className="chat-end-form"
+          data-end-chat-form
+          method="post"
+        >
+          <button type="submit" className="secondary">채팅 종료하기</button>
+        </form>
+      ) : null}
 
       {messages.length === 0 ? (
         <p className="empty-message" data-empty-message>
