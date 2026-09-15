@@ -197,11 +197,10 @@ conversationSchema.index({
 export const Conversation = mongoose.model(
   'Conversation',
   conversationSchema
-)
+);
 ```
 
 Message
-
 ```jsx
 import mongoose from 'mongoose';
 
