@@ -32,7 +32,11 @@ function ConversationCard({ conversation, topicTitle, userId }) {
     <li>
       <article className="conversation-card">
         <p className="eyebrow">{statusLabel}</p>
-        <h2>{topicTitle ?? "종료된 주제"}</h2>
+        <h2>
+          <a href={`/conversations/${String(conversation._id)}`}>
+            {topicTitle ?? "종료된 주제"}
+          </a>
+        </h2>
         <p>
           {otherParticipant?.anonymousName ?? "익명 사용자"} · {matchTypeLabel}
         </p>

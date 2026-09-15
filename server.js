@@ -4,13 +4,21 @@ import { readFile } from "node:fs/promises";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
+import { sendConversationMessage } from "./app/conversations/conversation-actions.js";
+import { beginTemporaryMatch } from "./app/temporary-match-actions.js";
 import { getAuth } from "./lib/auth.js";
-import { findRecentConversationsForUser } from "./lib/conversations.js";
+import { openConversationEventStream } from "./lib/conversation-events.js";
+import {
+  findConversationDetailForUser,
+  findConversationForUser,
+  findRecentConversationsForUser
+} from "./lib/conversations.js";
 import { getHomePageData } from "./lib/home-page-data.js";
 import { redirect } from "./lib/http.js";
 import { closeMongoClient, getDatabase } from "./lib/mongodb.js";
 import { getMissingConfiguration } from "./lib/runtime-config.js";
 import { getSession } from "./lib/session.js";
+import { getTemporaryMatchStatus } from "./lib/temporary-matching.js";
 import { closeUiRenderer, renderDocument } from "./lib/ui-renderer.js";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -27,6 +35,20 @@ const assets = new Map([
     {
       path: new URL("./public/app.css", import.meta.url),
       contentType: "text/css; charset=utf-8"
+    }
+  ],
+  [
+    "/assets/chat.js",
+    {
+      path: new URL("./public/chat.js", import.meta.url),
+      contentType: "text/javascript; charset=utf-8"
+    }
+  ],
+  [
+    "/assets/matching.js",
+    {
+      path: new URL("./public/matching.js", import.meta.url),
+      contentType: "text/javascript; charset=utf-8"
     }
   ],
   [
@@ -172,6 +194,136 @@ async function handleRequest(request, response) {
       "conversationList",
       { conversations, topicsById, userId },
       { session, title: "내 대화방" }
+    );
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/temporary-match") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    await beginTemporaryMatch(request, response, session);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/temporary-match/status") {
+    if (!session) {
+      response.writeHead(401, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ status: "UNAUTHORIZED" }));
+      return;
+    }
+
+    const result = await getTemporaryMatchStatus(String(session.user.id));
+    response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/matching") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const result = await getTemporaryMatchStatus(String(session.user.id));
+
+    if (result.status === "MATCHED") {
+      redirect(response, `/conversations/${result.conversationId}`);
+      return;
+    }
+
+    if (result.status === "IDLE") {
+      redirect(response, "/");
+      return;
+    }
+
+    await respondWithDocument(response, "matching", {}, {
+      session,
+      title: "상대방 기다리는 중"
+    });
+    return;
+  }
+
+  const conversationMessagePathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/messages$/
+  );
+
+  if (request.method === "POST" && conversationMessagePathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await sendConversationMessage(request, response, {
+      conversationId: conversationMessagePathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationEventPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/events$/
+  );
+
+  if (request.method === "GET" && conversationEventPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    const conversationId = conversationEventPathMatch[1];
+    const userId = String(session.user.id);
+    const conversation = await findConversationForUser(conversationId, userId);
+
+    if (!conversation || conversation.status !== "ACTIVE") {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("활성 상태인 대화방을 찾을 수 없습니다.");
+      return;
+    }
+
+    setSecurityHeaders(response);
+    openConversationEventStream(request, response, { conversationId, userId });
+    return;
+  }
+
+  const conversationPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)$/
+  );
+
+  if (request.method === "GET" && conversationPathMatch) {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const userId = String(session.user.id);
+    const detail = await findConversationDetailForUser(
+      conversationPathMatch[1],
+      userId
+    );
+
+    if (!detail) {
+      await respondWithDocument(
+        response,
+        "message",
+        {
+          heading: "대화방을 찾을 수 없습니다",
+          message: "대화방 주소를 확인하거나 내 대화방 목록으로 돌아가 주세요."
+        },
+        { session, statusCode: 404, title: "대화방 없음" }
+      );
+      return;
+    }
+
+    await respondWithDocument(
+      response,
+      "conversationDetail",
+      { ...detail, userId },
+      { session, title: "대화 내용" }
     );
     return;
   }
