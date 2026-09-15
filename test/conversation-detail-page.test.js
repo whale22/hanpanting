@@ -52,3 +52,35 @@ test("저장된 메시지를 참여자의 익명 이름으로 표시한다", () 
   assert.match(html, /용감한 수달/);
   assert.doesNotMatch(html, /current-user|other-user/);
 });
+
+test("활성 대화에는 실시간 연결과 메시지 입력 폼을 표시한다", () => {
+  const conversation = {
+    _id: "507f1f77bcf86cd799439011",
+    matchType: "OPPOSITE",
+    status: "ACTIVE",
+    participants: [
+      {
+        userId: "current-user",
+        anonymousName: "차분한 고래",
+        avatarCode: "blue-whale"
+      },
+      {
+        userId: "other-user",
+        anonymousName: "용감한 수달",
+        avatarCode: "green-otter"
+      }
+    ]
+  };
+  const html = renderToStaticMarkup(
+    React.createElement(ConversationTranscript, {
+      conversation,
+      messages: [],
+      topicTitle: "실시간 대화 주제",
+      userId: "current-user"
+    })
+  );
+
+  assert.match(html, /data-realtime-chat="true"/);
+  assert.match(html, /action="\/conversations\/507f1f77bcf86cd799439011\/messages"/);
+  assert.match(html, /src="\/assets\/chat.js"/);
+});

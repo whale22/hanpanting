@@ -32,7 +32,10 @@ function MessageItem({ conversation, message, userId }) {
     : sender?.anonymousName ?? "익명 사용자";
 
   return (
-    <li className={isMyMessage ? "message-item my-message" : "message-item"}>
+    <li
+      className={isMyMessage ? "message-item my-message" : "message-item"}
+      data-message-id={String(message._id)}
+    >
       <div
         className="message-avatar"
         title={sender?.avatarCode ?? "기본 프로필"}
@@ -62,9 +65,14 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
   const statusLabel = conversation.status === "ACTIVE"
     ? "대화 중"
     : "종료된 대화";
+  const isActive = conversation.status === "ACTIVE";
 
   return (
-    <section className="conversation-detail-page">
+    <section
+      className="conversation-detail-page"
+      data-conversation-id={String(conversation._id)}
+      data-realtime-chat={isActive ? "true" : undefined}
+    >
       <a href="/conversations" className="back-link">← 대화방 목록</a>
       <p className="eyebrow">{statusLabel}</p>
       <h1>{topicTitle ?? "종료된 주제"}</h1>
@@ -73,9 +81,15 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
       </p>
 
       {messages.length === 0 ? (
-        <p className="empty-message">저장된 메시지가 없습니다.</p>
+        <p className="empty-message" data-empty-message>
+          아직 메시지가 없습니다. 먼저 인사를 건네 보세요.
+        </p>
       ) : (
-        <ol className="message-list" aria-label="저장된 대화 내용">
+        <ol
+          className="message-list"
+          aria-label="저장된 대화 내용"
+          data-message-list
+        >
           {messages.map((message) => (
             <MessageItem
               conversation={conversation}
@@ -86,6 +100,29 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
           ))}
         </ol>
       )}
+
+      {isActive ? (
+        <form
+          action={`/conversations/${String(conversation._id)}/messages`}
+          className="chat-form"
+          data-chat-form
+          method="post"
+        >
+          <label htmlFor="chat-content">메시지</label>
+          <textarea
+            id="chat-content"
+            maxLength="2000"
+            name="content"
+            placeholder="상대방을 존중하는 대화를 나눠 주세요."
+            required
+            rows="3"
+          />
+          <p className="chat-error" data-chat-error hidden role="alert" />
+          <button type="submit">보내기</button>
+        </form>
+      ) : null}
+
+      {isActive ? <script defer src="/assets/chat.js" /> : null}
     </section>
   );
 }

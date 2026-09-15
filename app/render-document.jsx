@@ -8,6 +8,7 @@ import ConversationPage, {
 } from "./conversations/conversation-page.jsx";
 import { Layout } from "./layout.jsx";
 import LoginPage from "./login/page.jsx";
+import MatchingPage from "./matching-page.jsx";
 import MessagePage from "./message-page.jsx";
 import Page from "./page.jsx";
 import SignupPage from "./signup/page.jsx";
@@ -17,6 +18,7 @@ const pages = {
   conversationList: ConversationPage,
   home: Page,
   login: LoginPage,
+  matching: MatchingPage,
   message: MessagePage,
   signup: SignupPage
 };

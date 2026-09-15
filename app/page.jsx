@@ -16,6 +16,15 @@ export default function Page({
           대화방에서는 매번 새로운 익명 이름을 사용합니다.
         </p>
         <p className="signed-in">로그인되었습니다. 주제를 골라 보세요.</p>
+        <form action="/temporary-match" method="post" className="temporary-chat-form">
+          <button
+            disabled={needsConfiguration || databaseError || showPreview || topics.length === 0}
+            type="submit"
+          >
+            채팅하기
+          </button>
+          <small>첫 번째 주제에서 찬성 입장의 같은 의견 사용자를 기다립니다.</small>
+        </form>
       </section>
 
       {needsConfiguration && (

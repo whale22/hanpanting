@@ -124,6 +124,23 @@ main {
   font-weight: 700;
 }
 
+.temporary-chat-form {
+  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.temporary-chat-form button {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.temporary-chat-form small {
+  color: var(--text-light);
+}
+
 .setup-notice,
 .scope-note {
   background: var(--code);
@@ -287,6 +304,49 @@ main {
   background: var(--code);
   border: 1px solid var(--border);
   padding: 1rem;
+}
+
+.chat-form {
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+}
+
+.chat-form textarea {
+  resize: vertical;
+}
+
+.chat-form button {
+  margin-top: 0;
+}
+
+.chat-error {
+  color: #b92323;
+  font-weight: 700;
+}
+
+.matching-page {
+  margin-inline: auto;
+  max-width: 36rem;
+  text-align: center;
+}
+
+.matching-indicator {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-block: 2rem;
+}
+
+.matching-indicator span {
+  background: var(--accent);
+  border-radius: 50%;
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+.matching-condition {
+  color: var(--text-light);
 }
 
 .auth-panel {
