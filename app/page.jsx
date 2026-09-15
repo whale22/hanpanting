@@ -1,4 +1,4 @@
-import { TopicList } from "./topic-list.jsx";
+import { MatchRequestForm } from "./match-request-form.jsx";
 
 export default function Page({
   databaseError,
@@ -49,7 +49,7 @@ export default function Page({
         </aside>
       )}
 
-      <TopicList topics={topics} />
+      <MatchRequestForm topics={topics} />
 
       <aside className="scope-note">
         <h2>이번 기초 구성의 범위</h2>
