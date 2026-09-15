@@ -3,7 +3,8 @@ import { MatchRequestForm } from "./match-request-form.jsx";
 export default function Page({
   databaseError,
   needsConfiguration,
-  topics
+  topics,
+  waitingMatchRequest
 }) {
   return (
     <>
@@ -49,7 +50,7 @@ export default function Page({
         </aside>
       )}
 
-      <MatchRequestForm topics={topics} />
+      <MatchRequestForm topics={topics} waitingMatchRequest={waitingMatchRequest}/>
     </>
   );
 }

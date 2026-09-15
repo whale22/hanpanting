@@ -3,7 +3,7 @@ import {
   readForm,
   redirect
 } from "../lib/http.js";
-import { createWaitingMatchRequest } from "../lib/match-requests.js";
+import { createOrMatchRequest, cancelWaitingMatchRequest } from "../lib/match-requests.js";
 import { getRuntimeConfig } from "../lib/runtime-config.js";
 
 function respondWithError(response, statusCode, message) {
@@ -52,7 +52,7 @@ export async function createMatchRequest(
     return;
   }
 
-  const result = await createWaitingMatchRequest({
+  const result = await createOrMatchRequest({
     userId: String(session.user.id),
     topicId: form.get("topicId"),
     stance: form.get("stance"),
@@ -67,5 +67,53 @@ export async function createMatchRequest(
     return;
   }
 
-  redirect(response, "/?matchRequested=1");
+  if (result.status === "MATCHED") {
+    redirect(response, "/conversations");
+    // 나중에  `/conversations/${result.conversationId}`로 바꾸기
+    return;
+  }
+
+  redirect(response, "/");
+}
+
+// 취소
+export async function cancelMatchRequest(
+  request,
+  response,
+  session
+) {
+    if (!session?.user?.id) {
+        respondWithError(
+        response,
+        401,
+        "로그인이 필요합니다."
+        );
+        return;
+    }
+
+    const { authUrl } = getRuntimeConfig();
+    const expectedOrigin = new URL(authUrl).origin;
+
+    if (!hasSameOrigin(request, expectedOrigin)) {
+        respondWithError(
+        response,
+        403,
+        "허용되지 않은 요청입니다."
+        );
+        return;
+    }
+
+  const result = await cancelWaitingMatchRequest(
+    String(session.user.id)
+  );
+
+  if (!result.ok) {
+    redirect(
+      response,
+      `/?matchError=${encodeURIComponent(result.errorCode)}`
+    );
+    return;
+  }
+
+  redirect(response, "/");
 }
