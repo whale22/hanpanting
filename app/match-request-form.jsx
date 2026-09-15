@@ -1,4 +1,30 @@
-export function MatchRequestForm({ topics }) {
+export function MatchRequestForm({ topics, waitingMatchRequest }) {
+  if (waitingMatchRequest) {
+    return (
+      <section
+        aria-labelledby="match-application-title"
+        data-match-waiting="true"
+      >
+        <h2 id="match-application-title">
+          한판 신청하기
+        </h2>
+
+        <article>
+          <p>매칭 상대를 기다리고 있습니다.</p>
+
+          <form
+            action="/match-requests/cancel"
+            method="post"
+          >
+            <button type="submit">
+              취소하기
+            </button>
+          </form>
+        </article>
+      </section>
+    );
+  }
+
   if (topics.length === 0) {
     return (
       <section className="empty-state">

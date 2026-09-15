@@ -4,7 +4,7 @@ import { readFile } from "node:fs/promises";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
-import { createMatchRequest } from "./app/match-request-actions.js";
+import { createMatchRequest, cancelMatchRequest } from "./app/match-request-actions.js";
 import {
   endConversation,
   sendConversationMessage
@@ -184,8 +184,9 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const showPreview = requestUrl.searchParams.get("preview") === "1";
-    const pageProperties = await getHomePageData({ showPreview });
+    const pageProperties = await getHomePageData({
+      userId: String(session.user.id)
+    });
     await respondWithDocument(response, "home", pageProperties, { session });
     return;
   }
@@ -214,6 +215,23 @@ async function handleRequest(request, response) {
     }
 
     await createMatchRequest(
+      request,
+      response,
+      session
+    );
+    return;
+  }
+
+  // 취소 경로
+  if (
+    request.method === "POST"
+    && requestUrl.pathname === "/match-requests/cancel"
+  ) {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+    await cancelMatchRequest(
       request,
       response,
       session
