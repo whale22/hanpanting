@@ -50,14 +50,6 @@ export default function Page({
       )}
 
       <MatchRequestForm topics={topics} />
-
-      <aside className="scope-note">
-        <h2>이번 기초 구성의 범위</h2>
-        <p>
-          회원 인증, MongoDB 연결, 주제 조회, 화면 구조까지 준비되어 있습니다.
-          매칭 처리와 실시간 채팅은 연결 지점만 남겨 두었습니다.
-        </p>
-      </aside>
     </>
   );
 }
