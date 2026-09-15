@@ -88,6 +88,9 @@ npm run build   # 모든 JavaScript 파일 문법 검사
 npm run seed    # 개발 DB 초기 데이터 재생성
 ```
 
+Windows 11에서 Ubuntu 24.04 기반 Docker 이미지로 nginx, Node.js, MongoDB를
+함께 실행하려면 [Docker 실행 안내](docs/docker.md)를 확인하세요.
+
 ## 프로젝트 구조
 
 ```text
