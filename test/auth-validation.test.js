@@ -25,12 +25,18 @@ test("짧은 비밀번호를 거부한다", () => {
   assert.deepEqual(result, { ok: false, errorCode: "INVALID_PASSWORD" });
 });
 
-test("가입 이름의 길이를 확인한다", () => {
+test("가입할 때 정리된 이메일을 Better Auth 내부 이름으로 사용한다", () => {
   const result = validateSignupInput({
-    email: "user@example.com",
-    name: "한",
+    email: "  USER@Example.COM ",
     password: "password123"
   });
 
-  assert.deepEqual(result, { ok: false, errorCode: "INVALID_NAME" });
+  assert.deepEqual(result, {
+    ok: true,
+    value: {
+      email: "user@example.com",
+      password: "password123",
+      name: "user@example.com"
+    }
+  });
 });
