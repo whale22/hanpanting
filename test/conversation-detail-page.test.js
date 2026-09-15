@@ -4,7 +4,7 @@ import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ConversationTranscript } from "../app/conversations/conversation-detail-page.js";
+import { ConversationTranscript } from "../dist/server/render-document.js";
 
 test("저장된 메시지를 참여자의 익명 이름으로 표시한다", () => {
   const conversation = {

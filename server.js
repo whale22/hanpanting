@@ -5,7 +5,10 @@ import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
 import { getAuth } from "./lib/auth.js";
-import { findRecentConversationsForUser } from "./lib/conversations.js";
+import {
+  findConversationDetailForUser,
+  findRecentConversationsForUser
+} from "./lib/conversations.js";
 import { getHomePageData } from "./lib/home-page-data.js";
 import { redirect } from "./lib/http.js";
 import { closeMongoClient, getDatabase } from "./lib/mongodb.js";
@@ -172,6 +175,44 @@ async function handleRequest(request, response) {
       "conversationList",
       { conversations, topicsById, userId },
       { session, title: "내 대화방" }
+    );
+    return;
+  }
+
+  const conversationPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)$/
+  );
+
+  if (request.method === "GET" && conversationPathMatch) {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const userId = String(session.user.id);
+    const detail = await findConversationDetailForUser(
+      conversationPathMatch[1],
+      userId
+    );
+
+    if (!detail) {
+      await respondWithDocument(
+        response,
+        "message",
+        {
+          heading: "대화방을 찾을 수 없습니다",
+          message: "대화방 주소를 확인하거나 내 대화방 목록으로 돌아가 주세요."
+        },
+        { session, statusCode: 404, title: "대화방 없음" }
+      );
+      return;
+    }
+
+    await respondWithDocument(
+      response,
+      "conversationDetail",
+      { ...detail, userId },
+      { session, title: "대화 내용" }
     );
     return;
   }
