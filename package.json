@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "test": "npm run build --silent && node --test",
     "seed": "node --env-file-if-exists=.env.local scripts/seeds.js",
-    "seedDev": "node scripts/seeds.js"
+    "seedDev": "node scripts/seeds.js",
+    "test:conversation": "node scripts/create-test-conversation.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "1.7.4",
