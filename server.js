@@ -4,10 +4,18 @@ import { readFile } from "node:fs/promises";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
-import { sendConversationMessage } from "./app/conversations/conversation-actions.js";
+import {
+  endConversation,
+  sendConversationMessage
+} from "./app/conversations/conversation-actions.js";
 import { beginTemporaryMatch } from "./app/temporary-match-actions.js";
 import { getAuth } from "./lib/auth.js";
 import { openConversationEventStream } from "./lib/conversation-events.js";
+import {
+  processConversationLifecycleForConversation,
+  startConversationLifecycleChecks,
+  stopConversationLifecycleChecks
+} from "./lib/conversation-lifecycle.js";
 import {
   findConversationDetailForUser,
   findConversationForUser,
@@ -264,6 +272,24 @@ async function handleRequest(request, response) {
     return;
   }
 
+  const conversationEndPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/end$/
+  );
+
+  if (request.method === "POST" && conversationEndPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await endConversation(request, response, {
+      conversationId: conversationEndPathMatch[1],
+      session
+    });
+    return;
+  }
+
   const conversationEventPathMatch = requestUrl.pathname.match(
     /^\/conversations\/([^/]+)\/events$/
   );
@@ -277,6 +303,9 @@ async function handleRequest(request, response) {
 
     const conversationId = conversationEventPathMatch[1];
     const userId = String(session.user.id);
+
+    await processConversationLifecycleForConversation(conversationId);
+
     const conversation = await findConversationForUser(conversationId, userId);
 
     if (!conversation || conversation.status !== "ACTIVE") {
@@ -301,6 +330,11 @@ async function handleRequest(request, response) {
     }
 
     const userId = String(session.user.id);
+
+    await processConversationLifecycleForConversation(
+      conversationPathMatch[1]
+    );
+
     const detail = await findConversationDetailForUser(
       conversationPathMatch[1],
       userId
@@ -393,7 +427,12 @@ server.listen(port, () => {
   console.log(`한판팅 개발 서버: http://localhost:${port}`);
 });
 
+if (getMissingConfiguration().length === 0) {
+  startConversationLifecycleChecks();
+}
+
 async function shutdown() {
+  stopConversationLifecycleChecks();
   server.close();
   await closeUiRenderer();
   await closeMongoClient();
