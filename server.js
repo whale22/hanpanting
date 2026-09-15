@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
+import ConversationDetailPage from "./app/conversations/conversation-detail-page.js";
 import ConversationPage from "./app/conversations/conversation-page.js";
 import { Layout } from "./app/layout.js";
 import LoginPage from "./app/login/page.js";
@@ -167,6 +168,38 @@ async function handleRequest(request, response) {
 
     const content = await ConversationPage({ session });
     respondWithDocument(response, content, { session, title: "내 대화방" });
+    return;
+  }
+
+  const conversationPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)$/
+  );
+
+  if (request.method === "GET" && conversationPathMatch) {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const content = await ConversationDetailPage({
+      conversationId: conversationPathMatch[1],
+      session
+    });
+
+    if (!content) {
+      const notFoundPage = React.createElement(MessagePage, {
+        heading: "대화방을 찾을 수 없습니다",
+        message: "대화방 주소를 확인하거나 내 대화방 목록으로 돌아가 주세요."
+      });
+      respondWithDocument(response, notFoundPage, {
+        session,
+        statusCode: 404,
+        title: "대화방 없음"
+      });
+      return;
+    }
+
+    respondWithDocument(response, content, { session, title: "대화 내용" });
     return;
   }
 

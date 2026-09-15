@@ -39,7 +39,15 @@ function ConversationCard({ conversation, topicTitle, userId }) {
       "article",
       { className: "conversation-card" },
       React.createElement("p", { className: "eyebrow" }, statusLabel),
-      React.createElement("h2", null, topicTitle ?? "종료된 주제"),
+      React.createElement(
+        "h2",
+        null,
+        React.createElement(
+          "a",
+          { href: `/conversations/${String(conversation._id)}` },
+          topicTitle ?? "종료된 주제"
+        )
+      ),
       React.createElement(
         "p",
         null,
