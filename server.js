@@ -5,6 +5,7 @@ import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
 import { sendConversationMessage } from "./app/conversations/conversation-actions.js";
+import { createMatchRequest } from "./app/match-request-actions.js";
 import { beginTemporaryMatch } from "./app/temporary-match-actions.js";
 import { getAuth } from "./lib/auth.js";
 import { openConversationEventStream } from "./lib/conversation-events.js";
@@ -194,6 +195,20 @@ async function handleRequest(request, response) {
       "conversationList",
       { conversations, topicsById, userId },
       { session, title: "내 대화방" }
+    );
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/match-requests") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    await createMatchRequest(
+      request,
+      response,
+      session
     );
     return;
   }

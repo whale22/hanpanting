@@ -10,7 +10,7 @@ const session = {
   }
 };
 
-test("메인 화면에 임시 채팅 매칭 버튼을 표시한다", () => {
+test("메인 화면에 한판 신청 폼을 표시한다", () => {
   const html = renderDocument({
     page: "home",
     pageProperties: {
@@ -22,10 +22,10 @@ test("메인 화면에 임시 채팅 매칭 버튼을 표시한다", () => {
     session
   });
 
-  assert.match(html, /action="\/temporary-match"/);
-  assert.match(html, />채팅하기<\/button>/);
-  assert.match(html, /첫 번째 주제에서 찬성 입장의 같은 의견/);
-  assert.doesNotMatch(html, /<button[^>]*disabled[^>]*>채팅하기<\/button>/);
+  assert.match(html, /action="\/match-requests"/);
+  assert.match(html, /method="post"/);
+  assert.match(html, />한판 하기<\/button>/);
+  assert.doesNotMatch(html, /<button[^>]*disabled[^>]*>한판 하기<\/button>/);
 });
 
 test("대기 화면에서 매칭 상태를 자동으로 확인한다", () => {
