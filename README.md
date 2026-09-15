@@ -62,7 +62,7 @@ Seed는 DB 이름에 `dev`, `test`, `local`, `seed` 중 하나가 포함된 경�
 
 - 일반 사용자: `user01@seed.local` ~ `user05@seed.local`
 - 관리자: `admin01@seed.local`
-- 찬성·반대 선택이 있는 예시 토론 주제 3개
+- 찬성·반대 선택이 있는 예시 토론 주제 4개
 
 비밀번호는 `.env.local`의 `SEED_PASSWORD` 값입니다.
 

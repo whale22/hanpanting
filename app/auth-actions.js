@@ -16,7 +16,6 @@ import { getRuntimeConfig } from "../lib/runtime-config.js";
 function readCredentials(form) {
   return {
     email: form.get("email"),
-    name: form.get("name"),
     password: form.get("password")
   };
 }
