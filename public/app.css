@@ -134,41 +134,25 @@ main {
   width: auto;
 }
 
-.topic-grid {
-  display: grid;
-  gap: 1.25rem;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 23rem), 1fr));
-  margin-block: 2.5rem;
-}
-
-.topic-card {
-  border-top: 0.3rem solid var(--accent);
-  margin: 0;
-}
-
-.topic-card h2 {
-  min-height: 3.3em;
-}
-
 .matching-form fieldset {
   display: grid;
   gap: 0.7rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.matching-form label {
+.matching-form fieldset label {
   align-items: start;
   display: grid;
   grid-template-columns: auto 1fr;
   margin: 0;
 }
 
-.matching-form label small {
-  color: var(--text-light);
-  grid-column: 2;
-}
-
 .matching-form input[type="radio"] {
   margin-top: 0.35rem;
+}
+
+.matching-form > button {
+  width: 100%;
 }
 
 .empty-state,

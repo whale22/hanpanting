@@ -1,58 +1,4 @@
-function TopicCard({ isPreview, topic }) {
-  const topicId = String(topic._id);
-  const options = Array.isArray(topic.options) ? topic.options : [];
-
-  return (
-    <article className="topic-card">
-      <p className="eyebrow">{isPreview ? "화면 예시" : "오늘의 주제"}</p>
-      <h2>{topic.title}</h2>
-      <form className="matching-form">
-        <input type="hidden" name="topicId" value={topicId} />
-        <fieldset>
-          <legend>내 입장</legend>
-          {options.map((option, index) => (
-            <label key={option.code}>
-              <input
-                type="radio"
-                name="stance"
-                value={option.code}
-                defaultChecked={index === 0}
-              />
-              {option.label}
-            </label>
-          ))}
-        </fieldset>
-        <fieldset>
-          <legend>누구와 이야기할까요?</legend>
-          <label>
-            <input
-              type="radio"
-              name="matchType"
-              value="SAME"
-              defaultChecked
-            />
-            <strong>같은 편</strong>
-            <small>생각이 비슷한 사람과 공감하기</small>
-          </label>
-          <label>
-            <input type="radio" name="matchType" value="OPPOSITE" />
-            <strong>반대편</strong>
-            <small>다른 관점을 가진 사람과 대화하기</small>
-          </label>
-        </fieldset>
-        <button
-          type="button"
-          disabled
-          title="매칭 기능을 연결하면 활성화됩니다."
-        >
-          매칭 기능 연결 전
-        </button>
-      </form>
-    </article>
-  );
-}
-
-export function TopicList({ isPreview = false, topics }) {
+export function TopicList({ topics }) {
   if (topics.length === 0) {
     return (
       <section className="empty-state">
@@ -64,14 +10,54 @@ export function TopicList({ isPreview = false, topics }) {
   }
 
   return (
-    <section className="topic-grid" aria-label="토론 주제">
-      {topics.map((topic) => (
-        <TopicCard
-          isPreview={isPreview}
-          key={String(topic._id)}
-          topic={topic}
-        />
-      ))}
+    <section aria-labelledby="match-application-title">
+      <h2 id="match-application-title">한판 신청하기</h2>
+
+      <article>
+        <form className="matching-form">
+          <label htmlFor="topicId">주제</label>
+          <select id="topicId" name="topicId" defaultValue="" required>
+            <option value="" disabled>주제를 선택해 주세요</option>
+            {topics.map((topic) => (
+              <option key={String(topic._id)} value={String(topic._id)}>
+                {topic.title}
+              </option>
+            ))}
+          </select>
+
+          <fieldset>
+            <legend>내 입장</legend>
+            <label>
+              <input type="radio" name="stance" value="AGREE" defaultChecked />
+              찬성
+            </label>
+            <label>
+              <input type="radio" name="stance" value="DISAGREE" />
+              반대
+            </label>
+          </fieldset>
+
+          <fieldset>
+            <legend>매치 타입</legend>
+            <label>
+              <input type="radio" name="matchType" value="SAME" defaultChecked />
+              같은 편
+            </label>
+            <label>
+              <input type="radio" name="matchType" value="OPPOSITE" />
+              다른 편
+            </label>
+          </fieldset>
+
+          <button
+            type="button"
+            disabled
+            title="매칭 기능을 연결하면 활성화됩니다."
+          >
+            한판 하기
+          </button>
+        </form>
+      </article>
     </section>
   );
 }

@@ -3,7 +3,6 @@ import { TopicList } from "./topic-list.jsx";
 export default function Page({
   databaseError,
   needsConfiguration,
-  showPreview,
   topics
 }) {
   return (
@@ -50,7 +49,7 @@ export default function Page({
         </aside>
       )}
 
-      <TopicList isPreview={showPreview} topics={topics} />
+      <TopicList topics={topics} />
 
       <aside className="scope-note">
         <h2>이번 기초 구성의 범위</h2>
