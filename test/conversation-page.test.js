@@ -4,7 +4,7 @@ import test from "node:test";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
-import { ConversationList } from "../app/conversations/conversation-page.js";
+import { ConversationList } from "../dist/server/render-document.js";
 
 test("대화방 목록에는 익명 이름과 주제만 표시된다", () => {
   const conversations = [

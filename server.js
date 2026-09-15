@@ -1,22 +1,17 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
-import ConversationPage from "./app/conversations/conversation-page.js";
-import { Layout } from "./app/layout.js";
-import LoginPage from "./app/login/page.js";
-import MessagePage from "./app/message-page.js";
-import Page from "./app/page.js";
-import SignupPage from "./app/signup/page.js";
 import { getAuth } from "./lib/auth.js";
+import { findRecentConversationsForUser } from "./lib/conversations.js";
+import { getHomePageData } from "./lib/home-page-data.js";
 import { redirect } from "./lib/http.js";
 import { closeMongoClient, getDatabase } from "./lib/mongodb.js";
 import { getMissingConfiguration } from "./lib/runtime-config.js";
 import { getSession } from "./lib/session.js";
+import { closeUiRenderer, renderDocument } from "./lib/ui-renderer.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const assets = new Map([
@@ -55,10 +50,14 @@ function setSecurityHeaders(response) {
   );
 }
 
-function respondWithDocument(response, content, options = {}) {
+async function respondWithDocument(
+  response,
+  page,
+  pageProperties,
+  options = {}
+) {
   const { session = null, statusCode = 200, title = "한판팅" } = options;
-  const document = React.createElement(Layout, { session, title }, content);
-  const html = `<!doctype html>${renderToStaticMarkup(document)}`;
+  const html = await renderDocument({ page, pageProperties, session, title });
 
   setSecurityHeaders(response);
   response.writeHead(statusCode, { "content-type": "text/html; charset=utf-8" });
@@ -155,7 +154,8 @@ async function handleRequest(request, response) {
     }
 
     const showPreview = requestUrl.searchParams.get("preview") === "1";
-    respondWithDocument(response, await Page({ session, showPreview }), { session });
+    const pageProperties = await getHomePageData({ showPreview });
+    await respondWithDocument(response, "home", pageProperties, { session });
     return;
   }
 
@@ -165,39 +165,53 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const content = await ConversationPage({ session });
-    respondWithDocument(response, content, { session, title: "내 대화방" });
+    const userId = String(session.user.id);
+    const { conversations, topicsById } = await findRecentConversationsForUser(userId);
+    await respondWithDocument(
+      response,
+      "conversationList",
+      { conversations, topicsById, userId },
+      { session, title: "내 대화방" }
+    );
     return;
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/login") {
-    const content = await LoginPage({
-      accountCreated: requestUrl.searchParams.get("created") === "1",
-      errorCode: requestUrl.searchParams.get("error")
-    });
-    respondWithDocument(response, content, { session, title: "로그인" });
+    await respondWithDocument(
+      response,
+      "login",
+      {
+        accountCreated: requestUrl.searchParams.get("created") === "1",
+        errorCode: requestUrl.searchParams.get("error")
+      },
+      { session, title: "로그인" }
+    );
     return;
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/signup") {
-    const content = await SignupPage({ errorCode: requestUrl.searchParams.get("error") });
-    respondWithDocument(response, content, { session, title: "가입하기" });
+    await respondWithDocument(
+      response,
+      "signup",
+      { errorCode: requestUrl.searchParams.get("error") },
+      { session, title: "가입하기" }
+    );
     return;
   }
 
-  const notFoundPage = React.createElement(MessagePage, {
-    heading: "페이지를 찾을 수 없습니다",
-    message: "주소를 다시 확인해 주세요."
-  });
-  respondWithDocument(response, notFoundPage, {
-    session,
-    statusCode: 404,
-    title: "페이지 없음"
-  });
+  await respondWithDocument(
+    response,
+    "message",
+    {
+      heading: "페이지를 찾을 수 없습니다",
+      message: "주소를 다시 확인해 주세요."
+    },
+    { session, statusCode: 404, title: "페이지 없음" }
+  );
 }
 
 const server = createServer((request, response) => {
-  handleRequest(request, response).catch((error) => {
+  handleRequest(request, response).catch(async (error) => {
     console.error(error);
 
     if (response.headersSent) {
@@ -205,14 +219,21 @@ const server = createServer((request, response) => {
       return;
     }
 
-    const errorPage = React.createElement(MessagePage, {
-      heading: "요청을 처리하지 못했습니다",
-      message: "잠시 후 다시 시도해 주세요."
-    });
-    respondWithDocument(response, errorPage, {
-      statusCode: 500,
-      title: "오류"
-    });
+    try {
+      await respondWithDocument(
+        response,
+        "message",
+        {
+          heading: "요청을 처리하지 못했습니다",
+          message: "잠시 후 다시 시도해 주세요."
+        },
+        { statusCode: 500, title: "오류" }
+      );
+    } catch (renderError) {
+      console.error(renderError);
+      response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+      response.end("요청을 처리하지 못했습니다.");
+    }
   });
 });
 
@@ -222,6 +243,7 @@ server.listen(port, () => {
 
 async function shutdown() {
   server.close();
+  await closeUiRenderer();
   await closeMongoClient();
 }
 
