@@ -13,6 +13,7 @@ function AccountNavigation({ session }) {
   return React.createElement(
     "nav",
     { "aria-label": "계정 메뉴" },
+    React.createElement("a", { href: "/conversations" }, "내 대화방"),
     React.createElement(
       "span",
       { className: "account-name" },

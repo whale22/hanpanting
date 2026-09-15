@@ -6,6 +6,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
+import ConversationPage from "./app/conversations/conversation-page.js";
 import { Layout } from "./app/layout.js";
 import LoginPage from "./app/login/page.js";
 import MessagePage from "./app/message-page.js";
@@ -155,6 +156,17 @@ async function handleRequest(request, response) {
 
     const showPreview = requestUrl.searchParams.get("preview") === "1";
     respondWithDocument(response, await Page({ session, showPreview }), { session });
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/conversations") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const content = await ConversationPage({ session });
+    respondWithDocument(response, content, { session, title: "내 대화방" });
     return;
   }
 

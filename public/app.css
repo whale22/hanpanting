@@ -178,6 +178,32 @@ main {
   max-width: 36rem;
 }
 
+.conversation-list-page {
+  margin-inline: auto;
+  max-width: 48rem;
+}
+
+.conversation-list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin-block: 2rem;
+  padding: 0;
+}
+
+.conversation-card {
+  border-left: 0.3rem solid var(--accent);
+  margin: 0;
+}
+
+.conversation-card h2 {
+  margin-top: 0.35rem;
+}
+
+.conversation-time {
+  color: var(--text-light);
+}
+
 .auth-panel {
   background: var(--bg);
   border: 1px solid var(--border);

@@ -66,7 +66,7 @@ _id: ObjectId
 userId: string
 topicId: string
 stance: string
-matchingMode: SAME | OPPOSITE
+matchType: SAME | OPPOSITE
 status: WAITING | MATCHED | CANCELLED | EXPIRED
 conversationId?: string
 createdAt: Date
@@ -82,7 +82,7 @@ updatedAt: Date
 ```text
 _id: ObjectId
 topicId: string
-matchingMode: SAME | OPPOSITE
+matchType: SAME | OPPOSITE
 participants: [{
   userId: string,
   stance: string,
