@@ -12,6 +12,7 @@ import MessagePage from "./app/message-page.js";
 import Page from "./app/page.js";
 import SignupPage from "./app/signup/page.js";
 import { getAuth } from "./lib/auth.js";
+import { redirect } from "./lib/http.js";
 import { closeMongoClient, getDatabase } from "./lib/mongodb.js";
 import { getMissingConfiguration } from "./lib/runtime-config.js";
 import { getSession } from "./lib/session.js";
@@ -147,6 +148,11 @@ async function handleRequest(request, response) {
   const session = await readSessionOrNull(request);
 
   if (request.method === "GET" && requestUrl.pathname === "/") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
     const showPreview = requestUrl.searchParams.get("preview") === "1";
     respondWithDocument(response, await Page({ session, showPreview }), { session });
     return;
