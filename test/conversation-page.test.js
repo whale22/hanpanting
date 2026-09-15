@@ -31,6 +31,7 @@ test("대화방 목록에는 익명 이름과 주제만 표시된다", () => {
   assert.match(html, /예시 토론 주제/);
   assert.match(html, /용감한 수달/);
   assert.match(html, /다른 입장/);
+  assert.match(html, /href="\/conversations\/conversation-1"/);
   assert.doesNotMatch(html, /other-user/);
 });
 

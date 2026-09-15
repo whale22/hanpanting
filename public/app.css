@@ -124,6 +124,23 @@ main {
   font-weight: 700;
 }
 
+.temporary-chat-form {
+  align-items: start;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+}
+
+.temporary-chat-form button {
+  font-size: 1.05rem;
+  margin: 0;
+}
+
+.temporary-chat-form small {
+  color: var(--text-light);
+}
+
 .setup-notice,
 .scope-note {
   background: var(--code);
@@ -184,7 +201,135 @@ main {
   margin-top: 0.35rem;
 }
 
+.conversation-card h2 a {
+  color: var(--text);
+}
+
 .conversation-time {
+  color: var(--text-light);
+}
+
+.conversation-detail-page {
+  margin-inline: auto;
+  max-width: 48rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+
+.conversation-summary {
+  color: var(--text-light);
+}
+
+.message-list {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin-block: 2rem;
+  padding: 0;
+}
+
+.message-item {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  max-width: 85%;
+}
+
+.message-item.my-message {
+  flex-direction: row-reverse;
+  justify-self: end;
+}
+
+.message-avatar {
+  align-items: center;
+  background: var(--code);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  flex: 0 0 2.5rem;
+  font-weight: 800;
+  height: 2.5rem;
+  justify-content: center;
+}
+
+.message-body {
+  background: var(--code);
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+}
+
+.my-message .message-body {
+  border-color: var(--accent);
+}
+
+.message-meta {
+  align-items: center;
+  display: flex;
+  font-size: 0.85rem;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin: 0 0 0.35rem;
+}
+
+.message-meta time {
+  color: var(--text-light);
+}
+
+.message-content {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.empty-message {
+  background: var(--code);
+  border: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.chat-form {
+  border-top: 1px solid var(--border);
+  margin-top: 2rem;
+  padding-top: 1.25rem;
+}
+
+.chat-form textarea {
+  resize: vertical;
+}
+
+.chat-form button {
+  margin-top: 0;
+}
+
+.chat-error {
+  color: #b92323;
+  font-weight: 700;
+}
+
+.matching-page {
+  margin-inline: auto;
+  max-width: 36rem;
+  text-align: center;
+}
+
+.matching-indicator {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-block: 2rem;
+}
+
+.matching-indicator span {
+  background: var(--accent);
+  border-radius: 50%;
+  height: 0.75rem;
+  width: 0.75rem;
+}
+
+.matching-condition {
   color: var(--text-light);
 }
 
