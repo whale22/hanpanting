@@ -247,7 +247,7 @@ MongoDB 데이터까지 완전히 초기화하려면 컨테이너를 먼저 중�
 ## 주요 파일
 
 ```text
-Dockerfile                 Ubuntu 및 서비스 설치, 소스 복사, npm ci, 상태 확인
+Dockerfile                 Ubuntu 및 서비스 설치, npm ci, Vite 빌드, 상태 확인
 docker-compose.yml         빌드, 포트, 환경 변수, 데이터 경로와 재시작 정책
 .dockerignore              이미지 빌드에서 제외할 로컬 파일
 docker/entrypoint.sh       필수 환경 변수와 데이터 경로 준비

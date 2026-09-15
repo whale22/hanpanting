@@ -49,6 +49,7 @@ WORKDIR /app
 COPY --chown=hanpanting:hanpanting . .
 
 RUN npm ci --no-audit --no-fund \
+    && npm run build \
     && npm cache clean --force
 
 COPY docker/nginx.conf /etc/nginx/sites-available/default

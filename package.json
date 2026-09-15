@@ -8,11 +8,11 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env.local server.js",
+    "dev": "node --env-file-if-exists=.env.local server.js",
     "start": "node --env-file-if-exists=.env.local server.js",
-    "build": "node scripts/check-source.js",
+    "build": "vite build && node scripts/check-source.js",
     "lint": "eslint .",
-    "test": "node --test",
+    "test": "npm run build --silent && node --test",
     "seed": "node --env-file-if-exists=.env.local scripts/seeds.js",
     "seedDev": "node scripts/seeds.js"
   },
@@ -25,6 +25,8 @@
     "simpledotcss": "2.3.7"
   },
   "devDependencies": {
-    "eslint": "10.10.0"
+    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "10.10.0",
+    "vite": "8.3.0"
   }
 }
