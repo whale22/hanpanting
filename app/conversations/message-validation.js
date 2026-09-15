@@ -25,7 +25,7 @@ export function containsBannedWord(content) {
     // 위험도가 높은 단어만 2차 검사
     if (
       entry.level === "strict" &&
-      containsBannedWordWithGap(basic, word, 3)
+      containsBannedWordWithGap(basic, word, 5)
     ) {
       return true;
     }
@@ -34,7 +34,7 @@ export function containsBannedWord(content) {
   return false;
 }
 
-function containsBannedWordWithGap(content, word, maxGap = 10) {
+function containsBannedWordWithGap(content, word, maxGap = 5) {
   let contentIndex = 0;
 
   for (const targetChar of word) {
