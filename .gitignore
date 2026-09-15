@@ -1,8 +1,10 @@
 node_modules/
 .npm-cache/
+.docker/
 .env
 .env.*
 !.env.example
+!.env.docker.example
 .sites-runtime/
 coverage/
 *.log
