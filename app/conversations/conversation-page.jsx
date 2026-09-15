@@ -59,9 +59,26 @@ export function ConversationList({ conversations, topicsById, userId }) {
     );
   }
 
+  const sortedConversations = [...conversations].sort((a, b) => {
+    // ACTIVE 대화방을 먼저 배치
+    if (a.status === "ACTIVE" && b.status !== "ACTIVE") {
+      return -1;
+    }
+
+    if (a.status !== "ACTIVE" && b.status === "ACTIVE") {
+      return 1;
+    }
+
+    // 같은 상태라면 최근 활동 순
+    const aDate = a.lastMessageAt ?? a.createdAt;
+    const bDate = b.lastMessageAt ?? b.createdAt;
+
+    return new Date(bDate).getTime() - new Date(aDate).getTime();
+  });
+
   return (
     <ul className="conversation-list" aria-label="최근 대화방">
-      {conversations.map((conversation) => (
+      {sortedConversations.map((conversation) => (
         <ConversationCard
           conversation={conversation}
           key={String(conversation._id)}
@@ -73,12 +90,17 @@ export function ConversationList({ conversations, topicsById, userId }) {
   );
 }
 
-export default function ConversationPage({ conversations, topicsById, userId }) {
+export default function ConversationPage({
+  conversations,
+  topicsById,
+  userId
+}) {
   return (
     <section className="conversation-list-page">
       <p className="eyebrow">최근 7일</p>
       <h1>내 대화방</h1>
       <p>최근에 참여한 익명 대화를 확인할 수 있습니다.</p>
+
       <ConversationList
         conversations={conversations}
         topicsById={topicsById}
