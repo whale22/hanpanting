@@ -44,7 +44,7 @@ function TopicCard({ isPreview, topic }) {
           null,
           React.createElement("input", {
             type: "radio",
-            name: "matchingMode",
+            name: "matchType",
             value: "SAME",
             defaultChecked: true
           }),
@@ -56,7 +56,7 @@ function TopicCard({ isPreview, topic }) {
           null,
           React.createElement("input", {
             type: "radio",
-            name: "matchingMode",
+            name: "matchType",
             value: "OPPOSITE"
           }),
           React.createElement("strong", null, "반대편"),

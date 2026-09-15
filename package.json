@@ -13,7 +13,8 @@
     "build": "node scripts/check-source.js",
     "lint": "eslint .",
     "test": "node --test",
-    "seed": "node --env-file-if-exists=.env.local scripts/seeds.js"
+    "seed": "node --env-file-if-exists=.env.local scripts/seeds.js",
+    "seedDev": "node scripts/seeds.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "1.7.4",

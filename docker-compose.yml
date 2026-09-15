@@ -1,19 +1,35 @@
-name: hanpanting
-
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
+
     image: hanpanting:ubuntu24.04
     container_name: hanpanting
     restart: unless-stopped
+
     ports:
       - "3000:3000"
-    environment:
-      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-http://localhost:3000}
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+
+    env_file:
+      - .env.docker
+      - .env.local
+
+    depends_on:
+      - mongodb
+
+  mongodb:
+    image: mongo:8
+    container_name: hanpanting-mongodb
+    restart: unless-stopped
+
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+
+    ports:
+      - "27017:27017"
+
     volumes:
-      - type: bind
-        source: ${MONGODB_DATA_PATH}
-        target: /var/lib/mongodb
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:
