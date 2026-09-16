@@ -21,10 +21,9 @@ function readCredentials(form) {
 }
 
 function rejectCrossSiteRequest(request, response) {
-  const { authUrl } = getRuntimeConfig();
-  const expectedOrigin = new URL(authUrl).origin;
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (hasSameOrigin(request, expectedOrigin)) {
+  if (hasSameOrigin(request, trustedOrigins)) {
     return false;
   }
 

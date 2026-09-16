@@ -8,6 +8,29 @@ import {
   removeRepeatedFillers,
   validateConversationMessage
 } from "../app/conversations/message-validation.js";
+import { bannedWords } from "../lib/filters/banned-words.js";
+
+test("발표용 금칙어를 네 단계에 25개씩 고르게 유지한다", () => {
+  const countsByLevel = {
+    critical: 0,
+    normal: 0,
+    obfuscated: 0,
+    strict: 0
+  };
+
+  for (const { level } of bannedWords) {
+    countsByLevel[level] += 1;
+  }
+
+  const uniqueWords = new Set(bannedWords.map(({ word }) => word));
+
+  assert.equal(bannedWords.length, 100);
+  assert.equal(uniqueWords.size, 100);
+  assert.equal(countsByLevel.normal, 25);
+  assert.equal(countsByLevel.obfuscated, 25);
+  assert.equal(countsByLevel.strict, 25);
+  assert.equal(countsByLevel.critical, 25);
+});
 
 test("금칙어의 공백과 문자 형태를 정리해 검사한다", () => {
   assert.equal(containsBannedWord("비 속 어 1"), true);

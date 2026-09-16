@@ -66,13 +66,15 @@ MongoDB 경로와 인증 비밀값은 최초 한 번 프로젝트 루트의 `.en
 $authSecret = [guid]::NewGuid().ToString("N") + [guid]::NewGuid().ToString("N")
 @"
 MONGODB_DATA_PATH=C:/docker-data/hanpanting/mongodb
-BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_URL=http://16.184.8.18
+BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://16.184.8.18,http://16.184.8.18:3000
 BETTER_AUTH_SECRET=$authSecret
 "@ | Set-Content -Encoding ascii .env.docker
 ```
 
 외부 도메인이나 포트로 서비스할 때는 `BETTER_AUTH_URL`을 사용자가 브라우저에서
-접속하는 실제 주소로 바꿉니다.
+접속하는 대표 주소로 바꿉니다. `BETTER_AUTH_TRUSTED_ORIGINS`에는 로컬 개발 주소와
+실제로 접속할 외부 주소를 쉼표로 구분해 적습니다.
 
 ## Docker Compose로 실행
 

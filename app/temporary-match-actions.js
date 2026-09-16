@@ -3,9 +3,9 @@ import { getRuntimeConfig } from "../lib/runtime-config.js";
 import { startTemporaryMatch } from "../lib/temporary-matching.js";
 
 export async function beginTemporaryMatch(request, response, session) {
-  const { authUrl } = getRuntimeConfig();
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (!hasSameOrigin(request, new URL(authUrl).origin)) {
+  if (!hasSameOrigin(request, trustedOrigins)) {
     response.writeHead(403, { "content-type": "text/plain; charset=utf-8" });
     response.end("허용되지 않은 요청입니다.");
     return;
