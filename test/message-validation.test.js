@@ -5,6 +5,7 @@ import {
   containsBannedWord,
   containsLink,
   prepareBannedWordEntries,
+  removeRepeatedFillers,
   validateConversationMessage
 } from "../app/conversations/message-validation.js";
 
@@ -25,6 +26,31 @@ test("strict 금칙어를 메시지 중간과 여러 후보에서 찾는다", ()
     containsBannedWord("심123456심x한x나x쁜x말"),
     true
   );
+});
+
+test("반복 문자를 금칙어 사이에 아무리 많이 넣어도 검사한다", () => {
+  assert.equal(
+    containsBannedWord(
+      `심한${"x".repeat(100)}나${"x".repeat(1000)}쁜말`
+    ),
+    true
+  );
+});
+
+test("반복되는 짧은 단어를 금칙어 사이에 넣어도 검사한다", () => {
+  assert.equal(
+    containsBannedWord(
+      `심한${"테스트".repeat(20)}나${"반복".repeat(20)}쁜말`
+    ),
+    true
+  );
+});
+
+test("반복이 아닌 긴 문자열은 무제한 간격으로 간주하지 않는다", () => {
+  const content = "심한abcdefghijklm나nopqrstuvwxyz쁜말";
+
+  assert.equal(removeRepeatedFillers(content), content);
+  assert.equal(containsBannedWord(content), false);
 });
 
 test("기호로 나눈 normal 금칙어도 검사한다", () => {

@@ -55,70 +55,6 @@ const seedUsers = [
   }
 ];
 
-const anonymousNames = [
-  "차분한 고래",
-  "용감한 수달",
-  "다정한 여우",
-  "생각하는 부엉이",
-  "느긋한 판다",
-  "반짝이는 돌고래"
-];
-
-const avatarCodes = [
-  "blue-whale",
-  "green-otter",
-  "orange-fox",
-  "purple-owl",
-  "red-panda",
-  "yellow-dolphin"
-];
-
-const exampleMessages = [
-  "안면인식 기술이 실종자 수색이나 범죄 예방에 도움이 된다고 생각해요.",
-  "효과는 이해하지만 시민의 얼굴 정보가 상시 수집되는 점이 걱정돼요.",
-  "사용 장소와 보관 기간을 엄격하게 제한하면 위험을 줄일 수 있지 않을까요?",
-  "한번 수집된 정보가 다른 목적으로 쓰이지 않도록 감시할 방법도 필요해 보여요.",
-  "독립적인 기관이 사용 기록을 검사하고 위반 시 처벌하도록 하면 좋겠네요.",
-  "그런 장치가 실제로 작동한다면 제한적인 도입은 검토할 수 있을 것 같아요.",
-  "모든 장소가 아니라 위험이 큰 곳부터 시험하는 방식은 어떨까요?",
-  "시범 운영 결과와 오류율을 시민에게 공개한다는 조건이라면 동의해요.",
-  "기술 도입만큼 투명한 운영 원칙이 중요하다는 점은 같은 생각이에요.",
-  "네, 안전과 개인정보 보호를 함께 확인하면서 판단해야겠네요."
-];
-
-function pickTwoDifferentValues(values) {
-  const firstIndex = Math.floor(Math.random() * values.length);
-  let secondIndex = Math.floor(Math.random() * (values.length - 1));
-
-  if (secondIndex >= firstIndex) {
-    secondIndex += 1;
-  }
-
-  return [values[firstIndex], values[secondIndex]];
-}
-
-function getYesterdayAtTenPMInSeoul() {
-  const seoulDateParts = new Intl.DateTimeFormat("en-US", {
-    day: "numeric",
-    month: "numeric",
-    timeZone: "Asia/Seoul",
-    year: "numeric"
-  }).formatToParts(new Date());
-  const datePartValues = Object.fromEntries(
-    seoulDateParts.map((part) => [part.type, part.value])
-  );
-  const year = Number(datePartValues.year);
-  const month = Number(datePartValues.month);
-  const day = Number(datePartValues.day);
-
-  // 한국시간 22시는 UTC 13시입니다. Date.UTC가 월과 연도 경계도 처리합니다.
-  return new Date(Date.UTC(year, month - 1, day - 1, 13, 0, 0));
-}
-
-function addMinutes(date, minutes) {
-  return new Date(date.getTime() + minutes * 60 * 1000);
-}
-
 async function clearSeedCollections(database) {
   const collectionNames = Object.values(COLLECTIONS);
 
@@ -167,6 +103,14 @@ async function createIndexes(database) {
     },
     { key: { userId: 1, status: 1 } },
     { key: { topicId: 1, matchType: 1, stance: 1, status: 1, createdAt: 1 } }
+  ]);
+  await database.collection(COLLECTIONS.blocks).createIndexes([
+    {
+      key: { blockerUserId: 1, blockedUserId: 1 },
+      name: "one_block_relationship_per_user_pair",
+      unique: true
+    },
+    { key: { blockedUserId: 1, blockerUserId: 1 } }
   ]);
   const conversationsCollection = database.collection(COLLECTIONS.conversations);
   await conversationsCollection.createIndexes([
@@ -269,74 +213,7 @@ async function createSeedUsers(database) {
     throw new Error("Seed 인증 계정의 비밀번호 해시가 올바르지 않습니다.");
   }
 
-  return createdUsers;
-}
-
-async function createExampleConversation(
-  database,
-  createdUsers,
-  topicId,
-  conversationStartedAt
-) {
-  const usersByEmail = new Map(
-    createdUsers.map((user) => [user.email, user])
-  );
-  const firstUser = usersByEmail.get("user01@seed.local");
-  const secondUser = usersByEmail.get("user02@seed.local");
-
-  if (!firstUser || !secondUser) {
-    throw new Error("예시 대화에 사용할 Seed 사용자를 찾지 못했습니다.");
-  }
-
-  const [firstAnonymousName, secondAnonymousName] = pickTwoDifferentValues(anonymousNames);
-  const [firstAvatarCode, secondAvatarCode] = pickTwoDifferentValues(avatarCodes);
-  const lastMessageAt = addMinutes(
-    conversationStartedAt,
-    exampleMessages.length - 1
-  );
-  const conversationEndedAt = addMinutes(lastMessageAt, 10);
-  const firstUserId = String(firstUser._id);
-  const secondUserId = String(secondUser._id);
-
-  const conversationResult = await database
-    .collection(COLLECTIONS.conversations)
-    .insertOne({
-      topicId: String(topicId),
-      matchType: "OPPOSITE",
-      participants: [
-        {
-          userId: firstUserId,
-          stance: "AGREE",
-          anonymousName: firstAnonymousName,
-          avatarCode: firstAvatarCode,
-          joinedAt: conversationStartedAt,
-          leftAt: conversationEndedAt
-        },
-        {
-          userId: secondUserId,
-          stance: "DISAGREE",
-          anonymousName: secondAnonymousName,
-          avatarCode: secondAvatarCode,
-          joinedAt: conversationStartedAt,
-          leftAt: conversationEndedAt
-        }
-      ],
-      status: "ENDED",
-      lastMessageAt,
-      endedAt: conversationEndedAt,
-      endReason: "IDLE",
-      createdAt: conversationStartedAt,
-      updatedAt: conversationEndedAt
-    });
-  const conversationId = String(conversationResult.insertedId);
-  const messages = exampleMessages.map((content, index) => ({
-    conversationId,
-    senderUserId: index % 2 === 0 ? firstUserId : secondUserId,
-    content,
-    createdAt: addMinutes(conversationStartedAt, index)
-  }));
-
-  await database.collection(COLLECTIONS.messages).insertMany(messages);
+  return createdUsers.length;
 }
 
 async function seed() {
@@ -354,25 +231,18 @@ async function seed() {
   await createIndexes(database);
 
   const now = new Date();
-  const exampleConversationStartedAt = getYesterdayAtTenPMInSeoul();
-  const topicInsertResult = await database.collection(COLLECTIONS.topics).insertMany(
+  await database.collection(COLLECTIONS.topics).insertMany(
     topics.map((topic) => ({
       ...topic,
-      startsAt: exampleConversationStartedAt,
+      startsAt: now,
       createdAt: now,
       updatedAt: now
     }))
   );
-  const createdUsers = await createSeedUsers(database);
-  await createExampleConversation(
-    database,
-    createdUsers,
-    topicInsertResult.insertedIds[0],
-    exampleConversationStartedAt
-  );
+  const seedUserCount = await createSeedUsers(database);
 
   console.log(
-    `${databaseName}에 개발용 주제 ${topics.length}개, 계정 ${createdUsers.length}개, 예시 대화 1개를 준비했습니다.`
+    `${databaseName}에 개발용 주제 ${topics.length}개와 계정 ${seedUserCount}개를 준비했습니다.`
   );
 }
 

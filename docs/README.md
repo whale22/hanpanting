@@ -96,10 +96,26 @@ participants: [{
 status: ACTIVE | ENDED
 lastMessageAt?: Date
 endedAt?: Date
-endReason?: IDLE | LEFT | MODERATION | SYSTEM
+endReason?: IDLE | LEFT | MODERATION | SYSTEM | BLOCKED
+blockedUserId?: string
 createdAt: Date
 updatedAt: Date
 ```
+
+### blocks
+
+```text
+_id: ObjectId
+blockerUserId: string
+blockedUserId: string
+conversationId: string
+createdAt: Date
+updatedAt: Date
+```
+
+차단은 계정 전체 상태인 `SUSPENDED`와 분리해 관리합니다. 두 사용자 사이에 어느
+방향으로든 차단 관계가 있으면 서로 매칭하지 않고 메시지와 입력 상태도 전달하지
+않습니다.
 
 ### messages — 이후 채팅 구현용
 
