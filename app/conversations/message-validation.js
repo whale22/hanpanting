@@ -1,6 +1,7 @@
 import { bannedWords } from "../../lib/filters/banned-words.js";
 
 const MAX_MESSAGE_LENGTH = 2000;
+const MAX_REPEATED_FILLER_LENGTH = 10;
 const BANNED_WORD_MAX_GAPS = Object.freeze({
   normal: 0,
   obfuscated: 1,
@@ -15,12 +16,34 @@ const DOMAIN_PATTERN = new RegExp(
   "iu"
 );
 const IPV4_CANDIDATE_PATTERN = /(?:^|[^\d.])((?:\d{1,3}\.){3}\d{1,3})(?=$|[^\d.])/gu;
+const REPEATED_FILLER_PATTERNS = Array.from(
+  { length: MAX_REPEATED_FILLER_LENGTH },
+  (_, index) => new RegExp(
+    `([\\p{L}\\p{N}]{${index + 1}})\\1{2,}`,
+    "gu"
+  )
+);
 
 function normalizeForWordMatching(content) {
   return content
     .normalize("NFKC")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}]/gu, "");
+}
+
+export function removeRepeatedFillers(content) {
+  let result = content;
+  let previousResult;
+
+  do {
+    previousResult = result;
+
+    for (const pattern of REPEATED_FILLER_PATTERNS) {
+      result = result.replace(pattern, "");
+    }
+  } while (result !== previousResult);
+
+  return result;
 }
 
 function normalizeForLinkCheck(content) {
@@ -114,6 +137,9 @@ export function containsBannedWord(content) {
   }
 
   const normalizedContent = normalizeForWordMatching(content);
+  const contentWithoutRepeatedFillers = removeRepeatedFillers(
+    normalizedContent
+  );
 
   for (const entry of preparedBannedWords) {
     if (normalizedContent.includes(entry.normalizedWord)) {
@@ -121,6 +147,14 @@ export function containsBannedWord(content) {
     }
 
     if (entry.gapPattern?.test(normalizedContent)) {
+      return true;
+    }
+
+    if (contentWithoutRepeatedFillers.includes(entry.normalizedWord)) {
+      return true;
+    }
+
+    if (entry.gapPattern?.test(contentWithoutRepeatedFillers)) {
       return true;
     }
   }
