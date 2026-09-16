@@ -2,6 +2,10 @@ import { MatchRequestForm } from "./match-request-form.jsx";
 
 export default function Page({
   databaseError,
+  matchHistoryCounts = {
+    sameMatchCount: 0,
+    oppositeMatchCount: 0
+  },
   needsConfiguration,
   topics,
   waitingMatchRequest
@@ -24,12 +28,12 @@ export default function Page({
         <article className="history-box">
           <div>
             <strong>같은 입장끼리 한판</strong>
-            <p>5회</p>
+            <p>{matchHistoryCounts.sameMatchCount}회</p>
           </div>
 
           <div>
             <strong>다른 입장끼리 한판</strong>
-            <p>3회</p>
+            <p>{matchHistoryCounts.oppositeMatchCount}회</p>
           </div>
         </article>
       </section>
