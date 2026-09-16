@@ -1,22 +1,22 @@
-// lib/message-validation.js
-
 import { bannedWords } from "../../lib/filters/banned-words.js";
 
 const MAX_MESSAGE_LENGTH = 2000;
-const URL_PATTERN =
-  /\b(?:https?:\/\/|www\.)[^\s]+/i;
+const BANNED_WORD_MAX_GAPS = Object.freeze({
+  normal: 0,
+  obfuscated: 1,
+  strict: 5,
+  critical: 10
+});
+const URL_PATTERN = /(?:^|[^a-z0-9])(?:https?:\/\/|www\.)[^\s]+/iu;
+const DOMAIN_LABEL = "[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?";
+const DOMAIN_PATTERN = new RegExp(
+  `(?:^|[^a-z0-9-])(?:${DOMAIN_LABEL}\\.)+`
+    + "(?:[a-z]{2,63}|xn--[a-z0-9-]{2,59})(?=$|[^a-z0-9-])",
+  "iu"
+);
+const IPV4_CANDIDATE_PATTERN = /(?:^|[^\d.])((?:\d{1,3}\.){3}\d{1,3})(?=$|[^\d.])/gu;
 
-const DOMAIN_PATTERN =
-  /\b[a-z0-9-]+(?:\.[a-z0-9-]+)+\b/i;
-
-function normalizeBasic(content) {
-  return content
-    .normalize("NFKC")
-    .toLowerCase()
-    .replace(/\s+/g, "");
-}
-
-function normalizeForWarn(content) {
+function normalizeForWordMatching(content) {
   return content
     .normalize("NFKC")
     .toLowerCase()
@@ -27,49 +27,68 @@ function normalizeForLinkCheck(content) {
   return content
     .normalize("NFKC")
     .toLowerCase()
-    .replace(/\[\.\]/g, ".")
-    .replace(/\(\.\)/g, ".")
-    .replace(/\s*\.\s*/g, ".")
-    .replace(/hxxps?:\/\//g, "https://")
-    .replace(/https?:\[:\]\/\//g, "https://");
+    .replace(/[\u200B-\u200D\uFEFF]/gu, "")
+    .replace(/\[\s*(?:\.|dot|점)\s*\]/giu, ".")
+    .replace(/\(\s*(?:\.|dot|점)\s*\)/giu, ".")
+    .replace(/(?<=[a-z0-9-])\s*(?:dot|점)\s*(?=[a-z0-9-])/giu, ".")
+    .replace(/\s*\.\s*/gu, ".")
+    .replace(/\s+/gu, "")
+    .replace(/hxxp(s?):\/\//giu, "http$1://")
+    .replace(/(https?)\[:\]\/\//giu, "$1://");
 }
 
-export function containsLink(content) {
-  const normalized =
-    normalizeForLinkCheck(content);
-
-  return URL_PATTERN.test(normalized) ||
-    DOMAIN_PATTERN.test(normalized);
+function escapeRegularExpression(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }
 
-export function containsBannedWord(content) {
-  const basic = normalizeBasic(content);
+function createGapPattern(word, maxGap) {
+  if (maxGap === 0) {
+    return null;
+  }
 
-  for (const entry of bannedWords) {
-    const word = normalizeBasic(entry.word);
+  const gapPattern = `[\\p{L}\\p{N}]{0,${maxGap}}`;
+  const characters = Array.from(word, escapeRegularExpression);
 
-    // 기본 검사
-    if (basic.includes(word)) {
-      return true;
-    }
-    
-    if (entry.level === "warn" && normalizeForWarn(content).includes(word)) {
-      return true;
+  return new RegExp(characters.join(gapPattern), "u");
+}
+
+export function prepareBannedWordEntries(entries) {
+  if (!Array.isArray(entries)) {
+    throw new TypeError("금칙어 목록은 배열이어야 합니다.");
+  }
+
+  return entries.map((entry, index) => {
+    if (!entry || typeof entry.word !== "string" || !entry.word.trim()) {
+      throw new TypeError(`${index + 1}번째 금칙어의 word가 비어 있습니다.`);
     }
 
-    // 위험도가 높은 단어 2차 검사
-    if (
-      entry.level === "strict" &&
-      containsBannedWordWithGap(basic, word, 5)
-    ) {
-      return true;
+    if (!Object.hasOwn(BANNED_WORD_MAX_GAPS, entry.level)) {
+      throw new TypeError(`${index + 1}번째 금칙어의 level이 올바르지 않습니다.`);
     }
-    
-    // 위험도가 정말 높은 단어 3차 검사
-    if (
-      entry.level === "never" &&
-      containsBannedWordWithGap(basic, word, Infinity)
-    ) {
+
+    const word = normalizeForWordMatching(entry.word);
+
+    if (!word) {
+      throw new TypeError(`${index + 1}번째 금칙어에 검사할 문자가 없습니다.`);
+    }
+
+    return {
+      ...entry,
+      normalizedWord: word,
+      gapPattern: createGapPattern(word, BANNED_WORD_MAX_GAPS[entry.level])
+    };
+  });
+}
+
+const preparedBannedWords = prepareBannedWordEntries(bannedWords);
+
+function containsIPv4Address(content) {
+  const candidates = content.matchAll(IPV4_CANDIDATE_PATTERN);
+
+  for (const candidate of candidates) {
+    const octets = candidate[1].split(".").map(Number);
+
+    if (octets.every((octet) => octet >= 0 && octet <= 255)) {
       return true;
     }
   }
@@ -77,35 +96,40 @@ export function containsBannedWord(content) {
   return false;
 }
 
-function containsBannedWordWithGap(content, word, maxGap = 5) {
-  let contentIndex = 0;
+export function containsLink(content) {
+  if (typeof content !== "string") {
+    return false;
+  }
 
-  for (const targetChar of word) {
-    let found = false;
-    let gap = 0;
+  const normalized = normalizeForLinkCheck(content);
 
-    while (contentIndex < content.length) {
-      if (content[contentIndex] === targetChar) {
-        found = true;
-        contentIndex += 1;
-        break;
-      }
+  return URL_PATTERN.test(normalized)
+    || DOMAIN_PATTERN.test(normalized)
+    || containsIPv4Address(normalized);
+}
 
-      gap += 1;
+export function containsBannedWord(content) {
+  if (typeof content !== "string") {
+    return false;
+  }
 
-      if (gap > maxGap) {
-        return false;
-      }
+  const normalizedContent = normalizeForWordMatching(content);
 
-      contentIndex += 1;
+  for (const entry of preparedBannedWords) {
+    if (normalizedContent.includes(entry.normalizedWord)) {
+      return true;
     }
 
-    if (!found) {
-      return false;
+    if (entry.gapPattern?.test(normalizedContent)) {
+      return true;
     }
   }
 
-  return true;
+  return false;
+}
+
+function countMessageCharacters(content) {
+  return Array.from(content).length;
 }
 
 export function validateConversationMessage(value) {
@@ -115,7 +139,7 @@ export function validateConversationMessage(value) {
 
   const content = value.trim();
 
-  if (content.length > MAX_MESSAGE_LENGTH) {
+  if (countMessageCharacters(content) > MAX_MESSAGE_LENGTH) {
     return {
       ok: false,
       message: `메시지는 ${MAX_MESSAGE_LENGTH}자 이하로 입력해 주세요.`
@@ -132,9 +156,9 @@ export function validateConversationMessage(value) {
   if (containsLink(content)) {
     return {
       ok: false,
-      message:
-        "채팅에서는 외부 링크를 전송할 수 없습니다."
+      message: "채팅에서는 외부 링크를 전송할 수 없습니다."
     };
   }
+
   return { ok: true, content };
 }
