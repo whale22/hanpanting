@@ -37,10 +37,9 @@ export async function createMatchRequest(
     return;
   }
 
-  const { authUrl } = getRuntimeConfig();
-  const expectedOrigin = new URL(authUrl).origin;
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (!hasSameOrigin(request, expectedOrigin)) {
+  if (!hasSameOrigin(request, trustedOrigins)) {
     respondWithError(
       response,
       403,
@@ -123,10 +122,9 @@ export async function cancelMatchRequest(
         return;
     }
 
-    const { authUrl } = getRuntimeConfig();
-    const expectedOrigin = new URL(authUrl).origin;
+    const { trustedOrigins } = getRuntimeConfig();
 
-    if (!hasSameOrigin(request, expectedOrigin)) {
+    if (!hasSameOrigin(request, trustedOrigins)) {
         respondWithError(
         response,
         403,

@@ -43,6 +43,7 @@ npm install
 ```dotenv
 MONGODB_URI=mongodb://127.0.0.1:27017/hanpanting_dev
 BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://16.184.8.18,http://16.184.8.18:3000
 BETTER_AUTH_SECRET=32자-이상의-예측하기-어려운-문자열
 SEED_PASSWORD=Seed1234!
 PORT=3000
