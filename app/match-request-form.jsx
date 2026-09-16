@@ -1,3 +1,7 @@
+// WAITING 요청이 있으면 대기 문구와 취소 버튼 표시
+// 대기 상태일 때 브라우저 SSE 스크립트 로드
+// 대기 요청이 없으면 한판 신청 폼 표시
+
 export function MatchRequestForm({ topics, waitingMatchRequest }) {
   if (waitingMatchRequest) {
     return (
@@ -21,6 +25,11 @@ export function MatchRequestForm({ topics, waitingMatchRequest }) {
             </button>
           </form>
         </article>
+
+        <script
+          defer
+          src="/assets/match-request-waiting.js"
+        />
       </section>
     );
   }

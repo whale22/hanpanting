@@ -30,6 +30,9 @@ import { getMissingConfiguration } from "./lib/runtime-config.js";
 import { getSession } from "./lib/session.js";
 import { getTemporaryMatchStatus } from "./lib/temporary-matching.js";
 import { closeUiRenderer, renderDocument } from "./lib/ui-renderer.js";
+import {
+  openMatchRequestEventStream
+} from "./lib/match-request-events.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const assets = new Map([
@@ -67,7 +70,17 @@ const assets = new Map([
       path: new URL("./public/favicon.svg", import.meta.url),
       contentType: "image/svg+xml"
     }
-  ]
+  ],
+  [
+    "/assets/match-request-waiting.js",
+    {
+      path: new URL(
+        "./public/match-request-waiting.js",
+        import.meta.url
+      ),
+      contentType: "text/javascript; charset=utf-8"
+    }
+  ],
 ]);
 
 let authHandler;
@@ -178,6 +191,32 @@ async function handleRequest(request, response) {
   }
 
   const session = await readSessionOrNull(request);
+
+  if (
+    request.method === "GET"
+    && requestUrl.pathname === "/match-requests/events"
+  ) {
+    if (!session) {
+      response.writeHead(401, {
+        "content-type": "text/plain; charset=utf-8"
+      });
+
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    setSecurityHeaders(response);
+
+    openMatchRequestEventStream(
+      request,
+      response,
+      {
+        userId: String(session.user.id)
+      }
+    );
+
+    return;
+  }
 
   if (request.method === "GET" && requestUrl.pathname === "/") {
     if (!session) {

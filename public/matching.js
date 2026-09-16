@@ -1,3 +1,4 @@
+// 소영님이 테스트 위해서 임시로 만든 코드. 추후 삭제 예정
 /* global document, fetch, location, setTimeout */
 
 const matchingPage = document.querySelector("[data-matching-page]");
