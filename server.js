@@ -20,6 +20,7 @@ import {
   stopConversationLifecycleChecks
 } from "./lib/conversation-lifecycle.js";
 import {
+  findActiveConversationForUser,
   findConversationDetailForUser,
   findConversationForUser,
   findRecentConversationsForUser
@@ -32,7 +33,8 @@ import { getSession } from "./lib/session.js";
 import { getTemporaryMatchStatus } from "./lib/temporary-matching.js";
 import { closeUiRenderer, renderDocument } from "./lib/ui-renderer.js";
 import {
-  openMatchRequestEventStream
+  openMatchRequestEventStream,
+  publishMatchFound
 } from "./lib/match-request-events.js";
 
 const port = Number(process.env.PORT ?? 3000);
@@ -206,15 +208,29 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const userId = String(session.user.id);
+
     setSecurityHeaders(response);
 
+    // 반드시 DB 조회보다 먼저 SSE 연결을 등록해야 합니다.
     openMatchRequestEventStream(
       request,
       response,
       {
-        userId: String(session.user.id)
+        userId
       }
     );
+
+    // SSE 연결 전에 이미 매칭됐는지 확인합니다.
+    const activeConversation =
+      await findActiveConversationForUser(userId);
+
+    if (activeConversation?._id) {
+      publishMatchFound(
+        userId,
+        String(activeConversation._id)
+      );
+    }
 
     return;
   }
@@ -225,10 +241,31 @@ async function handleRequest(request, response) {
       return;
     }
 
-    const pageProperties = await getHomePageData({
-      userId: String(session.user.id)
-    });
-    await respondWithDocument(response, "home", pageProperties, { session });
+  const userId = String(session.user.id);
+
+  const activeConversation =
+    await findActiveConversationForUser(userId);
+
+  if (activeConversation?._id) {
+    redirect(
+      response,
+      `/conversations/${encodeURIComponent(
+        String(activeConversation._id)
+      )}`
+    );
+    return;
+  }
+
+  const pageProperties = await getHomePageData({
+    userId
+  });
+
+  await respondWithDocument(
+    response,
+    "home",
+    pageProperties,
+    { session }
+  );
     return;
   }
 
