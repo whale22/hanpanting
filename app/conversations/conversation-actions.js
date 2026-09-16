@@ -27,9 +27,9 @@ export async function sendConversationMessage(
   response,
   { conversationId, session }
 ) {
-  const { authUrl } = getRuntimeConfig();
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (!hasSameOrigin(request, new URL(authUrl).origin)) {
+  if (!hasSameOrigin(request, trustedOrigins)) {
     respondWithError(response, 403, "허용되지 않은 요청입니다.");
     return;
   }
@@ -69,9 +69,9 @@ export async function sendConversationTypingStatus(
   response,
   { conversationId, session }
 ) {
-  const { authUrl } = getRuntimeConfig();
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (!hasSameOrigin(request, new URL(authUrl).origin)) {
+  if (!hasSameOrigin(request, trustedOrigins)) {
     respondWithError(response, 403, "허용되지 않은 요청입니다.");
     return;
   }
@@ -113,9 +113,9 @@ export async function endConversation(
   response,
   { conversationId, session }
 ) {
-  const { authUrl } = getRuntimeConfig();
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (!hasSameOrigin(request, new URL(authUrl).origin)) {
+  if (!hasSameOrigin(request, trustedOrigins)) {
     respondWithError(response, 403, "허용되지 않은 요청입니다.");
     return;
   }
@@ -147,9 +147,9 @@ export async function blockConversationUser(
   response,
   { conversationId, session }
 ) {
-  const { authUrl } = getRuntimeConfig();
+  const { trustedOrigins } = getRuntimeConfig();
 
-  if (!hasSameOrigin(request, new URL(authUrl).origin)) {
+  if (!hasSameOrigin(request, trustedOrigins)) {
     respondWithError(response, 403, "허용되지 않은 요청입니다.");
     return;
   }

@@ -13,6 +13,7 @@ if (( ${#BETTER_AUTH_SECRET} < 32 )); then
 fi
 
 export BETTER_AUTH_URL="${BETTER_AUTH_URL:-http://localhost:3000}"
+export BETTER_AUTH_TRUSTED_ORIGINS="${BETTER_AUTH_TRUSTED_ORIGINS:-http://localhost:3000,http://16.184.8.18,http://16.184.8.18:3000}"
 export MONGODB_URI="${MONGODB_URI:-mongodb://127.0.0.1:27017/hanpanting_dev}"
 
 mkdir -p /run/nginx /var/lib/mongodb /var/log/mongodb

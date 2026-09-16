@@ -63,6 +63,7 @@ RUN chmod 0755 /usr/local/bin/hanpanting-entrypoint \
 
 ENV NODE_ENV=production \
     BETTER_AUTH_URL=http://localhost:3000 \
+    BETTER_AUTH_TRUSTED_ORIGINS=http://localhost:3000,http://16.184.8.18,http://16.184.8.18:3000 \
     MONGODB_URI=mongodb://127.0.0.1:27017/hanpanting_dev
 
 VOLUME ["/var/lib/mongodb"]

@@ -12,8 +12,8 @@ services:
       - "3000:3000"
 
     env_file:
-      - .env.docker
       - .env.local
+      - .env.docker
 
     depends_on:
       - mongodb
