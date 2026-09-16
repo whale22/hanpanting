@@ -300,6 +300,12 @@ main {
   resize: vertical;
 }
 
+.chat-shortcut-hint {
+  color: var(--text-light);
+  display: block;
+  margin-block: -0.5rem 1rem;
+}
+
 .chat-form button {
   margin-top: 0;
 }
@@ -307,6 +313,13 @@ main {
 .chat-error {
   color: #b92323;
   font-weight: 700;
+}
+
+.typing-indicator {
+  color: var(--text-light);
+  font-size: 0.9rem;
+  font-style: italic;
+  margin-block: 0.75rem;
 }
 
 .chat-end-form {

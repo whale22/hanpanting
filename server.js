@@ -7,7 +7,8 @@ import { signIn, signOut, signUp } from "./app/auth-actions.js";
 import { createMatchRequest, cancelMatchRequest } from "./app/match-request-actions.js";
 import {
   endConversation,
-  sendConversationMessage
+  sendConversationMessage,
+  sendConversationTypingStatus
 } from "./app/conversations/conversation-actions.js";
 import { beginTemporaryMatch } from "./app/temporary-match-actions.js";
 import { getAuth } from "./lib/auth.js";
@@ -300,6 +301,24 @@ async function handleRequest(request, response) {
 
     await sendConversationMessage(request, response, {
       conversationId: conversationMessagePathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationTypingPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/typing$/
+  );
+
+  if (request.method === "POST" && conversationTypingPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await sendConversationTypingStatus(request, response, {
+      conversationId: conversationTypingPathMatch[1],
       session
     });
     return;
