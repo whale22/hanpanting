@@ -1,3 +1,10 @@
+// 세션 및 동일 출처 확인
+// 폼 값 읽기
+// createOrMatchRequest 호출
+// 매칭 성공 이벤트 발행
+// 현재 신청자를 채팅방으로 리다이렉트
+
+
 import {
   hasSameOrigin,
   readForm,
@@ -5,6 +12,9 @@ import {
 } from "../lib/http.js";
 import { createOrMatchRequest, cancelWaitingMatchRequest } from "../lib/match-requests.js";
 import { getRuntimeConfig } from "../lib/runtime-config.js";
+import {
+  publishMatchFound
+} from "../lib/match-request-events.js";
 
 function respondWithError(response, statusCode, message) {
   response.writeHead(statusCode, {
@@ -68,15 +78,10 @@ export async function createMatchRequest(
   }
 
   if (result.status === "MATCHED") {
-    redirect(
-      response,
-      `/conversations/${encodeURIComponent(result.conversationId)}`
-    );
-    return;
-  }
-
-  if (result.status === "MATCHED") {
-    if (!result.conversationId) {
+    if (
+      !result.conversationId
+      || !result.waitingUserId
+    ) {
       respondWithError(
         response,
         500,
@@ -85,10 +90,18 @@ export async function createMatchRequest(
       return;
     }
 
+    publishMatchFound(
+      result.waitingUserId,
+      result.conversationId
+    );
+
     redirect(
       response,
-      `/conversations/${encodeURIComponent(result.conversationId)}`
+      `/conversations/${encodeURIComponent(
+        result.conversationId
+      )}`
     );
+
     return;
   }
 
