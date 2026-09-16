@@ -10,12 +10,17 @@ const sharedGlobals = {
 
 export default [
   {
-    ignores: ["node_modules/**", ".npm-cache/**", "coverage/**"]
+    ignores: ["dist/**", "node_modules/**", ".npm-cache/**", "coverage/**"]
   },
   {
-    files: ["**/*.js"],
+    files: ["**/*.{js,jsx}"],
     languageOptions: {
       ecmaVersion: "latest",
+      parserOptions: {
+        ecmaFeatures: {
+          jsx: true
+        }
+      },
       sourceType: "module",
       globals: sharedGlobals
     },

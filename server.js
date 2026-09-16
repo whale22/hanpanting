@@ -1,20 +1,41 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 
-import React from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import { toNodeHandler } from "better-auth/node";
 
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
-import { Layout } from "./app/layout.js";
-import LoginPage from "./app/login/page.js";
-import MessagePage from "./app/message-page.js";
-import Page from "./app/page.js";
-import SignupPage from "./app/signup/page.js";
+import { createMatchRequest, cancelMatchRequest } from "./app/match-request-actions.js";
+import {
+  blockConversationUser,
+  endConversation,
+  sendConversationMessage,
+  sendConversationTypingStatus
+} from "./app/conversations/conversation-actions.js";
+import { beginTemporaryMatch } from "./app/temporary-match-actions.js";
 import { getAuth } from "./lib/auth.js";
+import { openConversationEventStream } from "./lib/conversation-events.js";
+import {
+  processConversationLifecycleForConversation,
+  startConversationLifecycleChecks,
+  stopConversationLifecycleChecks
+} from "./lib/conversation-lifecycle.js";
+import {
+  findActiveConversationForUser,
+  findConversationDetailForUser,
+  findConversationForUser,
+  findRecentConversationsForUser
+} from "./lib/conversations.js";
+import { getHomePageData } from "./lib/home-page-data.js";
+import { redirect } from "./lib/http.js";
 import { closeMongoClient, getDatabase } from "./lib/mongodb.js";
 import { getMissingConfiguration } from "./lib/runtime-config.js";
 import { getSession } from "./lib/session.js";
+import { getTemporaryMatchStatus } from "./lib/temporary-matching.js";
+import { closeUiRenderer, renderDocument } from "./lib/ui-renderer.js";
+import {
+  openMatchRequestEventStream,
+  publishMatchFound
+} from "./lib/match-request-events.js";
 
 const port = Number(process.env.PORT ?? 3000);
 const assets = new Map([
@@ -33,12 +54,36 @@ const assets = new Map([
     }
   ],
   [
+    "/assets/chat.js",
+    {
+      path: new URL("./public/chat.js", import.meta.url),
+      contentType: "text/javascript; charset=utf-8"
+    }
+  ],
+  [
+    "/assets/matching.js",
+    {
+      path: new URL("./public/matching.js", import.meta.url),
+      contentType: "text/javascript; charset=utf-8"
+    }
+  ],
+  [
     "/favicon.svg",
     {
       path: new URL("./public/favicon.svg", import.meta.url),
       contentType: "image/svg+xml"
     }
-  ]
+  ],
+  [
+    "/assets/match-request-waiting.js",
+    {
+      path: new URL(
+        "./public/match-request-waiting.js",
+        import.meta.url
+      ),
+      contentType: "text/javascript; charset=utf-8"
+    }
+  ],
 ]);
 
 let authHandler;
@@ -53,10 +98,14 @@ function setSecurityHeaders(response) {
   );
 }
 
-function respondWithDocument(response, content, options = {}) {
+async function respondWithDocument(
+  response,
+  page,
+  pageProperties,
+  options = {}
+) {
   const { session = null, statusCode = 200, title = "한판팅" } = options;
-  const document = React.createElement(Layout, { session, title }, content);
-  const html = `<!doctype html>${renderToStaticMarkup(document)}`;
+  const html = await renderDocument({ page, pageProperties, session, title });
 
   setSecurityHeaders(response);
   response.writeHead(statusCode, { "content-type": "text/html; charset=utf-8" });
@@ -146,40 +195,356 @@ async function handleRequest(request, response) {
 
   const session = await readSessionOrNull(request);
 
+  if (
+    request.method === "GET"
+    && requestUrl.pathname === "/match-requests/events"
+  ) {
+    if (!session) {
+      response.writeHead(401, {
+        "content-type": "text/plain; charset=utf-8"
+      });
+
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    const userId = String(session.user.id);
+
+    setSecurityHeaders(response);
+
+    // 반드시 DB 조회보다 먼저 SSE 연결을 등록해야 합니다.
+    openMatchRequestEventStream(
+      request,
+      response,
+      {
+        userId
+      }
+    );
+
+    // SSE 연결 전에 이미 매칭됐는지 확인합니다.
+    const activeConversation =
+      await findActiveConversationForUser(userId);
+
+    if (activeConversation?._id) {
+      publishMatchFound(
+        userId,
+        String(activeConversation._id)
+      );
+    }
+
+    return;
+  }
+
   if (request.method === "GET" && requestUrl.pathname === "/") {
-    const showPreview = requestUrl.searchParams.get("preview") === "1";
-    respondWithDocument(response, await Page({ session, showPreview }), { session });
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+  const userId = String(session.user.id);
+
+  const activeConversation =
+    await findActiveConversationForUser(userId);
+
+  if (activeConversation?._id) {
+    redirect(
+      response,
+      `/conversations/${encodeURIComponent(
+        String(activeConversation._id)
+      )}`
+    );
+    return;
+  }
+
+  const pageProperties = await getHomePageData({
+    userId
+  });
+
+  await respondWithDocument(
+    response,
+    "home",
+    pageProperties,
+    { session }
+  );
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/conversations") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const userId = String(session.user.id);
+    const { conversations, topicsById } = await findRecentConversationsForUser(userId);
+    await respondWithDocument(
+      response,
+      "conversationList",
+      { conversations, topicsById, userId },
+      { session, title: "내 대화방" }
+    );
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/match-requests") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    await createMatchRequest(
+      request,
+      response,
+      session
+    );
+    return;
+  }
+
+  // 취소 경로
+  if (
+    request.method === "POST"
+    && requestUrl.pathname === "/match-requests/cancel"
+  ) {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+    await cancelMatchRequest(
+      request,
+      response,
+      session
+    );
+    return;
+  }
+
+  if (request.method === "POST" && requestUrl.pathname === "/temporary-match") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    await beginTemporaryMatch(request, response, session);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/temporary-match/status") {
+    if (!session) {
+      response.writeHead(401, { "content-type": "application/json; charset=utf-8" });
+      response.end(JSON.stringify({ status: "UNAUTHORIZED" }));
+      return;
+    }
+
+    const result = await getTemporaryMatchStatus(String(session.user.id));
+    response.writeHead(200, { "content-type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify(result));
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/matching") {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const result = await getTemporaryMatchStatus(String(session.user.id));
+
+    if (result.status === "MATCHED") {
+      redirect(response, `/conversations/${result.conversationId}`);
+      return;
+    }
+
+    if (result.status === "IDLE") {
+      redirect(response, "/");
+      return;
+    }
+
+    await respondWithDocument(response, "matching", {}, {
+      session,
+      title: "상대방 기다리는 중"
+    });
+    return;
+  }
+
+  const conversationMessagePathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/messages$/
+  );
+
+  if (request.method === "POST" && conversationMessagePathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await sendConversationMessage(request, response, {
+      conversationId: conversationMessagePathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationTypingPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/typing$/
+  );
+
+  if (request.method === "POST" && conversationTypingPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await sendConversationTypingStatus(request, response, {
+      conversationId: conversationTypingPathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationEndPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/end$/
+  );
+
+  if (request.method === "POST" && conversationEndPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await endConversation(request, response, {
+      conversationId: conversationEndPathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationBlockPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/block$/
+  );
+
+  if (request.method === "POST" && conversationBlockPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await blockConversationUser(request, response, {
+      conversationId: conversationBlockPathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationEventPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/events$/
+  );
+
+  if (request.method === "GET" && conversationEventPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    const conversationId = conversationEventPathMatch[1];
+    const userId = String(session.user.id);
+
+    await processConversationLifecycleForConversation(conversationId);
+
+    const conversation = await findConversationForUser(conversationId, userId);
+
+    if (!conversation || conversation.status !== "ACTIVE") {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("활성 상태인 대화방을 찾을 수 없습니다.");
+      return;
+    }
+
+    setSecurityHeaders(response);
+    openConversationEventStream(request, response, { conversationId, userId });
+    return;
+  }
+
+  const conversationPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)$/
+  );
+
+  if (request.method === "GET" && conversationPathMatch) {
+    if (!session) {
+      redirect(response, "/login");
+      return;
+    }
+
+    const userId = String(session.user.id);
+
+    await processConversationLifecycleForConversation(
+      conversationPathMatch[1]
+    );
+
+    const detail = await findConversationDetailForUser(
+      conversationPathMatch[1],
+      userId
+    );
+
+    if (!detail) {
+      await respondWithDocument(
+        response,
+        "message",
+        {
+          heading: "대화방을 찾을 수 없습니다",
+          message: "대화방 주소를 확인하거나 내 대화방 목록으로 돌아가 주세요."
+        },
+        { session, statusCode: 404, title: "대화방 없음" }
+      );
+      return;
+    }
+
+    await respondWithDocument(
+      response,
+      "conversationDetail",
+      { ...detail, userId },
+      { session, title: "대화 내용" }
+    );
     return;
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/login") {
-    const content = await LoginPage({
-      accountCreated: requestUrl.searchParams.get("created") === "1",
-      errorCode: requestUrl.searchParams.get("error")
-    });
-    respondWithDocument(response, content, { session, title: "로그인" });
+    await respondWithDocument(
+      response,
+      "login",
+      {
+        accountCreated: requestUrl.searchParams.get("created") === "1",
+        errorCode: requestUrl.searchParams.get("error")
+      },
+      { session, title: "로그인" }
+    );
     return;
   }
 
   if (request.method === "GET" && requestUrl.pathname === "/signup") {
-    const content = await SignupPage({ errorCode: requestUrl.searchParams.get("error") });
-    respondWithDocument(response, content, { session, title: "가입하기" });
+    await respondWithDocument(
+      response,
+      "signup",
+      { errorCode: requestUrl.searchParams.get("error") },
+      { session, title: "가입하기" }
+    );
     return;
   }
 
-  const notFoundPage = React.createElement(MessagePage, {
-    heading: "페이지를 찾을 수 없습니다",
-    message: "주소를 다시 확인해 주세요."
-  });
-  respondWithDocument(response, notFoundPage, {
-    session,
-    statusCode: 404,
-    title: "페이지 없음"
-  });
+  await respondWithDocument(
+    response,
+    "message",
+    {
+      heading: "페이지를 찾을 수 없습니다",
+      message: "주소를 다시 확인해 주세요."
+    },
+    { session, statusCode: 404, title: "페이지 없음" }
+  );
 }
 
 const server = createServer((request, response) => {
-  handleRequest(request, response).catch((error) => {
+  handleRequest(request, response).catch(async (error) => {
     console.error(error);
 
     if (response.headersSent) {
@@ -187,14 +552,21 @@ const server = createServer((request, response) => {
       return;
     }
 
-    const errorPage = React.createElement(MessagePage, {
-      heading: "요청을 처리하지 못했습니다",
-      message: "잠시 후 다시 시도해 주세요."
-    });
-    respondWithDocument(response, errorPage, {
-      statusCode: 500,
-      title: "오류"
-    });
+    try {
+      await respondWithDocument(
+        response,
+        "message",
+        {
+          heading: "요청을 처리하지 못했습니다",
+          message: "잠시 후 다시 시도해 주세요."
+        },
+        { statusCode: 500, title: "오류" }
+      );
+    } catch (renderError) {
+      console.error(renderError);
+      response.writeHead(500, { "content-type": "text/plain; charset=utf-8" });
+      response.end("요청을 처리하지 못했습니다.");
+    }
   });
 });
 
@@ -202,8 +574,14 @@ server.listen(port, () => {
   console.log(`한판팅 개발 서버: http://localhost:${port}`);
 });
 
+if (getMissingConfiguration().length === 0) {
+  startConversationLifecycleChecks();
+}
+
 async function shutdown() {
+  stopConversationLifecycleChecks();
   server.close();
+  await closeUiRenderer();
   await closeMongoClient();
 }
 

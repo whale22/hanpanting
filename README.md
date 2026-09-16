@@ -8,12 +8,14 @@
 
 - Node.js 20.19 이상
 - React 19
+- Vite
 - Simple.css
 - MongoDB
 - Better Auth
 
-Next.js, Express, Redis, 별도 프런트엔드 빌드 도구는 사용하지 않습니다.
-Node.js 기본 HTTP 서버가 요청마다 React 화면을 서버에서 렌더링합니다.
+Next.js, Express, Redis는 사용하지 않습니다. Node.js 기본 HTTP 서버가 요청마다
+React 화면을 서버에서 렌더링하고, Vite가 JSX 변환과 서버용 화면 번들을
+담당합니다.
 
 ## 현재 준비된 기능
 
@@ -72,31 +74,36 @@ Seed는 DB 이름에 `dev`, `test`, `local`, `seed` 중 하나가 포함된 경�
 npm run dev
 ```
 
-브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다. 환경 변수가
-아직 없더라도 서버와 화면은 열리며 필요한 설정을 안내합니다. 상태 확인 주소는
-`/health`입니다. DB를 변경하지 않고 매칭 화면 예시만 확인하려면
-`http://localhost:3000/?preview=1`을 사용합니다.
+개발 서버는 Vite를 내부 JSX 변환기로 사용합니다. `.jsx` 화면 파일을 변경한 뒤
+브라우저를 새로고침하면 서버를 다시 시작하지 않아도 변경된 화면을 확인할 수
+있습니다. `server.js`나 `lib`의 서버 로직을 변경한 경우에는 개발 서버를 다시
+실행합니다. 브라우저에서 [http://localhost:3000](http://localhost:3000)을
+엽니다. 상태 확인 주소는 `/health`입니다. DB를 변경하지 않고 매칭 화면 예시만
+확인하려면 `http://localhost:3000/?preview=1`을 사용합니다.
 
 ## 주요 명령
 
 ```bash
-npm run dev     # 파일 변경을 감지하는 개발 서버
-npm start       # 일반 서버 실행
+npm run dev     # Vite로 JSX를 변환하는 개발 서버
+npm start       # npm run build 결과로 일반 서버 실행
 npm test        # 기본 단위 테스트
 npm run lint    # 코드 검사
-npm run build   # 모든 JavaScript 파일 문법 검사
+npm run build   # Vite 서버 화면 번들 생성과 JavaScript 문법 검사
 npm run seed    # 개발 DB 초기 데이터 재생성
 ```
+
+Windows 11에서 Ubuntu 24.04 기반 Docker 이미지로 nginx, Node.js, MongoDB를
+함께 실행하려면 [Docker 실행 안내](docs/docker.md)를 확인하세요.
 
 ## 프로젝트 구조
 
 ```text
-app/             React 페이지와 폼 처리
+app/             JSX로 작성한 React 페이지와 폼 화면
 lib/             인증, MongoDB, 조회, 입력 검증
 public/          Simple.css를 보완하는 최소 CSS와 파비콘
 scripts/         Seed와 소스 검사
 test/            Node.js 기본 테스트
-server.js        HTTP 경로 분기와 React 서버 렌더링 진입점
+server.js        HTTP 경로 분기와 Vite 화면 렌더링 진입점
 ```
 
 인증용 컬렉션은 Better Auth가 관리합니다. 서비스 데이터의 `_id`는 MongoDB

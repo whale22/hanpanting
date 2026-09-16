@@ -8,12 +8,14 @@
     "node": ">=20.19.0"
   },
   "scripts": {
-    "dev": "node --watch --env-file-if-exists=.env.local server.js",
+    "dev": "node --env-file-if-exists=.env.local server.js",
     "start": "node --env-file-if-exists=.env.local server.js",
-    "build": "node scripts/check-source.js",
+    "build": "vite build && node scripts/check-source.js",
     "lint": "eslint .",
-    "test": "node --test",
-    "seed": "node --env-file-if-exists=.env.local scripts/seeds.js"
+    "test": "npm run build --silent && node --test",
+    "seed": "node --env-file-if-exists=.env.local scripts/seeds.js",
+    "seedDev": "node scripts/seeds.js",
+    "test:conversation": "node scripts/create-test-conversation.js"
   },
   "dependencies": {
     "@better-auth/mongo-adapter": "1.7.4",
@@ -24,6 +26,8 @@
     "simpledotcss": "2.3.7"
   },
   "devDependencies": {
-    "eslint": "10.10.0"
+    "@vitejs/plugin-react": "6.1.1",
+    "eslint": "10.10.0",
+    "vite": "8.3.0"
   }
 }

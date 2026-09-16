@@ -8,6 +8,7 @@
 ## 현재 구현 범위
 
 - Node.js 기본 HTTP 서버와 요청 시점 React 서버 렌더링
+- Vite를 통한 JSX 변환과 서버용 화면 번들 생성
 - Simple.css와 최소한의 서비스 전용 레이아웃 CSS
 - MongoDB 연결과 활성 토론 주제 조회
 - Better Auth 이메일·비밀번호 가입, 로그인, 로그아웃
@@ -23,14 +24,15 @@
 ```text
 브라우저 폼 또는 페이지 요청
 → server.js 경로 분기
-→ app의 페이지·인증 처리
-→ lib의 인증·조회 함수
+→ lib의 데이터 준비와 인증·조회 함수
+→ Vite로 변환한 app의 JSX 페이지
 → MongoDB
 ```
 
 프레임워크 전용 Server Component와 Server Action은 사용하지 않습니다.
-대신 모든 페이지 함수를 서버 요청 때 직접 실행하고, 입력 변경은 일반 HTML
-`<form>` POST 요청을 Node.js 서버에서 다시 검증합니다.
+대신 Node.js 서버가 요청 데이터를 준비한 뒤 JSX 페이지를 서버에서 HTML로
+렌더링합니다. 입력 변경은 일반 HTML `<form>` POST 요청을 Node.js 서버에서
+다시 검증합니다.
 
 ## 컬렉션 계약
 
@@ -41,7 +43,7 @@
 `user`에는 애플리케이션이 소유하는 다음 추가 필드가 있습니다.
 
 - `role`: `USER` 또는 `ADMIN`, 기본값 `USER`
-- `status`: `ONLINE`, `MATCHING`, `ACTIVE`, `SUSPENDED`
+- `status`: `ONLINE`, `WAITING`, `ACTIVE`, `SUSPENDED`
 - `lastLoginAt`: 마지막 로그인 시각, 선택 값
 
 이 필드는 가입 입력으로 변경할 수 없는 서버 소유 필드입니다.
@@ -66,7 +68,7 @@ _id: ObjectId
 userId: string
 topicId: string
 stance: string
-matchingMode: SAME | OPPOSITE
+matchType: SAME | OPPOSITE
 status: WAITING | MATCHED | CANCELLED | EXPIRED
 conversationId?: string
 createdAt: Date
@@ -82,7 +84,7 @@ updatedAt: Date
 ```text
 _id: ObjectId
 topicId: string
-matchingMode: SAME | OPPOSITE
+matchType: SAME | OPPOSITE
 participants: [{
   userId: string,
   stance: string,
@@ -94,10 +96,26 @@ participants: [{
 status: ACTIVE | ENDED
 lastMessageAt?: Date
 endedAt?: Date
-endReason?: IDLE | LEFT | MODERATION | SYSTEM
+endReason?: IDLE | LEFT | MODERATION | SYSTEM | BLOCKED
+blockedUserId?: string
 createdAt: Date
 updatedAt: Date
 ```
+
+### blocks
+
+```text
+_id: ObjectId
+blockerUserId: string
+blockedUserId: string
+conversationId: string
+createdAt: Date
+updatedAt: Date
+```
+
+차단은 계정 전체 상태인 `SUSPENDED`와 분리해 관리합니다. 두 사용자 사이에 어느
+방향으로든 차단 관계가 있으면 서로 매칭하지 않고 메시지와 입력 상태도 전달하지
+않습니다.
 
 ### messages — 이후 채팅 구현용
 
