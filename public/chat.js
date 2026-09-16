@@ -1,4 +1,8 @@
-/* global confirm, document, EventSource, fetch, FormData */
+/* global clearTimeout, confirm, document, EventSource, fetch, FormData, setTimeout */
+
+const TYPING_REFRESH_MILLISECONDS = 1500;
+const TYPING_STOP_MILLISECONDS = 2000;
+const REMOTE_TYPING_EXPIRES_MILLISECONDS = 3500;
 
 const chat = document.querySelector("[data-realtime-chat]");
 
@@ -7,9 +11,15 @@ if (chat) {
   const form = chat.querySelector("[data-chat-form]");
   const endForm = chat.querySelector("[data-end-chat-form]");
   const errorMessage = chat.querySelector("[data-chat-error]");
+  const messageInput = form.querySelector("textarea[name='content']");
   const statusLabel = chat.querySelector("[data-conversation-status]");
+  const typingIndicator = chat.querySelector("[data-typing-indicator]");
   const eventSource = new EventSource(`/conversations/${conversationId}/events`);
   let conversationEnded = false;
+  let lastTypingSignalAt = 0;
+  let remoteTypingTimer;
+  let typingActive = false;
+  let typingStopTimer;
 
   function getMessageList() {
     let messageList = chat.querySelector("[data-message-list]");
@@ -23,8 +33,80 @@ if (chat) {
     messageList.className = "message-list";
     messageList.dataset.messageList = "";
     messageList.setAttribute("aria-label", "저장된 대화 내용");
-    form.before(messageList);
+    typingIndicator.before(messageList);
     return messageList;
+  }
+
+  function hideRemoteTypingIndicator() {
+    clearTimeout(remoteTypingTimer);
+    typingIndicator.hidden = true;
+  }
+
+  function showRemoteTypingIndicator() {
+    clearTimeout(remoteTypingTimer);
+    typingIndicator.hidden = false;
+    remoteTypingTimer = setTimeout(
+      hideRemoteTypingIndicator,
+      REMOTE_TYPING_EXPIRES_MILLISECONDS
+    );
+  }
+
+  function sendTypingStatus(isTyping) {
+    if (conversationEnded || typingActive === isTyping) {
+      return;
+    }
+
+    typingActive = isTyping;
+    lastTypingSignalAt = Date.now();
+
+    fetch(`/conversations/${conversationId}/typing`, {
+      body: new URLSearchParams({ isTyping: String(isTyping) }),
+      headers: { "content-type": "application/x-www-form-urlencoded" },
+      method: "POST"
+    }).catch(() => {
+      // 입력 상태는 일시적인 정보이므로 다음 입력에서 다시 전송합니다.
+    });
+  }
+
+  function stopTyping() {
+    clearTimeout(typingStopTimer);
+    sendTypingStatus(false);
+  }
+
+  function handleMessageInput() {
+    if (!messageInput.value.trim()) {
+      stopTyping();
+      return;
+    }
+
+    const now = Date.now();
+
+    if (
+      !typingActive
+      || now - lastTypingSignalAt >= TYPING_REFRESH_MILLISECONDS
+    ) {
+      if (typingActive) {
+        typingActive = false;
+      }
+
+      sendTypingStatus(true);
+    }
+
+    clearTimeout(typingStopTimer);
+    typingStopTimer = setTimeout(stopTyping, TYPING_STOP_MILLISECONDS);
+  }
+
+  function handleMessageKeydown(event) {
+    const shouldSubmit = event.key === "Enter"
+      && event.shiftKey
+      && !event.isComposing;
+
+    if (!shouldSubmit) {
+      return;
+    }
+
+    event.preventDefault();
+    form.requestSubmit();
   }
 
   function appendMessage(message) {
@@ -81,6 +163,8 @@ if (chat) {
 
   function finishConversation() {
     conversationEnded = true;
+    clearTimeout(typingStopTimer);
+    hideRemoteTypingIndicator();
     eventSource.close();
     chat.removeAttribute("data-realtime-chat");
     statusLabel.textContent = "종료된 대화";
@@ -89,7 +173,24 @@ if (chat) {
   }
 
   eventSource.addEventListener("message", (event) => {
-    appendMessage(JSON.parse(event.data));
+    const message = JSON.parse(event.data);
+
+    if (!message.isMyMessage) {
+      hideRemoteTypingIndicator();
+    }
+
+    appendMessage(message);
+  });
+
+  eventSource.addEventListener("typing", (event) => {
+    const typingEvent = JSON.parse(event.data);
+
+    if (typingEvent.isTyping) {
+      showRemoteTypingIndicator();
+      return;
+    }
+
+    hideRemoteTypingIndicator();
   });
 
   eventSource.addEventListener("conversation-ended", () => {
@@ -112,6 +213,7 @@ if (chat) {
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
+    stopTyping();
     const submitButton = form.querySelector("button[type='submit']");
     submitButton.disabled = true;
     errorMessage.hidden = true;
@@ -138,6 +240,10 @@ if (chat) {
       submitButton.disabled = false;
     }
   });
+
+  messageInput.addEventListener("input", handleMessageInput);
+  messageInput.addEventListener("keydown", handleMessageKeydown);
+  messageInput.addEventListener("blur", stopTyping);
 
   endForm.addEventListener("submit", async (event) => {
     event.preventDefault();

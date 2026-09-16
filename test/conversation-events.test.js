@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { createMessageEvent } from "../lib/conversation-events.js";
+import {
+  createMessageEvent,
+  createTypingEvent,
+  shouldReceiveTypingEvent
+} from "../lib/conversation-events.js";
 import {
   getNextReplyTimerState,
   validateMessageContent
@@ -57,6 +61,15 @@ test("시스템 메시지는 사용자 정보 없이 전달한다", () => {
   assert.equal(event.isSystem, true);
   assert.equal(event.senderName, "시스템");
   assert.doesNotMatch(JSON.stringify(event), /viewer-user-id/);
+});
+
+test("입력 상태는 사용자 정보 없이 상대방에게만 전달한다", () => {
+  const event = createTypingEvent(true);
+
+  assert.deepEqual(event, { isTyping: true });
+  assert.equal(shouldReceiveTypingEvent("sender-user", "sender-user"), false);
+  assert.equal(shouldReceiveTypingEvent("other-user", "sender-user"), true);
+  assert.doesNotMatch(JSON.stringify(event), /sender-user|other-user/);
 });
 
 test("같은 사용자가 계속 보내도 답변 대기 시작 시각을 연장하지 않는다", () => {

@@ -132,6 +132,17 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
       )}
 
       {isActive ? (
+        <p
+          aria-live="polite"
+          className="typing-indicator"
+          data-typing-indicator
+          hidden
+        >
+          상대방이 입력 중입니다…
+        </p>
+      ) : null}
+
+      {isActive ? (
         <form
           action={`/conversations/${String(conversation._id)}/messages`}
           className="chat-form"
@@ -140,6 +151,7 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
         >
           <label htmlFor="chat-content">메시지</label>
           <textarea
+            aria-describedby="chat-shortcut-hint"
             id="chat-content"
             maxLength="2000"
             name="content"
@@ -147,6 +159,9 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
             required
             rows="3"
           />
+          <small className="chat-shortcut-hint" id="chat-shortcut-hint">
+            Enter로 줄바꿈 · Shift + Enter로 전송
+          </small>
           <p className="chat-error" data-chat-error hidden role="alert" />
           <button type="submit">보내기</button>
         </form>
