@@ -100,14 +100,26 @@ export function ConversationTranscript({ conversation, messages, topicTitle, use
       </p>
 
       {isActive ? (
-        <form
-          action={`/conversations/${String(conversation._id)}/end`}
-          className="chat-end-form"
-          data-end-chat-form
-          method="post"
-        >
-          <button type="submit" className="secondary">채팅 종료하기</button>
-        </form>
+        <div className="chat-action-forms">
+          <form
+            action={`/conversations/${String(conversation._id)}/end`}
+            className="chat-end-form"
+            data-end-chat-form
+            method="post"
+          >
+            <button type="submit" className="secondary">채팅 종료하기</button>
+          </form>
+          <form
+            action={`/conversations/${String(conversation._id)}/block`}
+            className="chat-block-form"
+            data-block-user-form
+            method="post"
+          >
+            <button type="submit" className="secondary danger-button">
+              상대방 차단하기
+            </button>
+          </form>
+        </div>
       ) : null}
 
       {messages.length === 0 ? (

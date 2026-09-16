@@ -10,6 +10,11 @@ import {
 } from "../../lib/conversations.js";
 import { hasSameOrigin, readForm, redirect } from "../../lib/http.js";
 import { getRuntimeConfig } from "../../lib/runtime-config.js";
+import {
+  blockUserFromConversation,
+  getOtherParticipantUserId,
+  hasBlockBetweenUsers
+} from "../../lib/user-blocks.js";
 import { validateConversationMessage } from "./message-validation.js";
 
 function respondWithError(response, statusCode, message) {
@@ -87,6 +92,17 @@ export async function sendConversationTypingStatus(
     return;
   }
 
+  const otherUserId = getOtherParticipantUserId(conversation, userId);
+
+  if (!otherUserId || await hasBlockBetweenUsers(userId, otherUserId)) {
+    respondWithError(
+      response,
+      403,
+      "차단 관계가 있는 사용자에게 입력 상태를 보낼 수 없습니다."
+    );
+    return;
+  }
+
   publishConversationTyping(conversationId, userId, typingValue === "true");
   response.writeHead(204);
   response.end();
@@ -116,6 +132,45 @@ export async function endConversation(
 
   publishConversationMessage(result.conversation, result.systemMessage);
   publishConversationEnded(result.conversation);
+
+  if (request.headers.accept === "application/json") {
+    response.writeHead(204);
+    response.end();
+    return;
+  }
+
+  redirect(response, `/conversations/${conversationId}`);
+}
+
+export async function blockConversationUser(
+  request,
+  response,
+  { conversationId, session }
+) {
+  const { authUrl } = getRuntimeConfig();
+
+  if (!hasSameOrigin(request, new URL(authUrl).origin)) {
+    respondWithError(response, 403, "허용되지 않은 요청입니다.");
+    return;
+  }
+
+  const result = await blockUserFromConversation({
+    conversationId,
+    blockerUserId: String(session.user.id)
+  });
+
+  if (!result.ok) {
+    respondWithError(response, 400, result.message);
+    return;
+  }
+
+  if (result.systemMessage) {
+    publishConversationMessage(result.conversation, result.systemMessage);
+  }
+
+  if (result.conversationEnded) {
+    publishConversationEnded(result.conversation);
+  }
 
   if (request.headers.accept === "application/json") {
     response.writeHead(204);

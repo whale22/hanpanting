@@ -9,6 +9,7 @@ const chat = document.querySelector("[data-realtime-chat]");
 if (chat) {
   const conversationId = chat.dataset.conversationId;
   const form = chat.querySelector("[data-chat-form]");
+  const blockForm = chat.querySelector("[data-block-user-form]");
   const endForm = chat.querySelector("[data-end-chat-form]");
   const errorMessage = chat.querySelector("[data-chat-error]");
   const messageInput = form.querySelector("textarea[name='content']");
@@ -169,6 +170,7 @@ if (chat) {
     chat.removeAttribute("data-realtime-chat");
     statusLabel.textContent = "종료된 대화";
     form.remove();
+    blockForm.remove();
     endForm.remove();
   }
 
@@ -273,6 +275,39 @@ if (chat) {
       errorMessage.hidden = false;
       errorMessage.textContent = error.message || "채팅을 종료하지 못했습니다.";
       endButton.disabled = false;
+    }
+  });
+
+  blockForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!confirm(
+      "상대방을 차단하면 이 채팅이 즉시 종료되고 다시 매칭되지 않습니다. 차단할까요?"
+    )) {
+      return;
+    }
+
+    const blockButton = blockForm.querySelector("button[type='submit']");
+    blockButton.disabled = true;
+    errorMessage.hidden = true;
+
+    try {
+      const response = await fetch(blockForm.action, {
+        headers: { accept: "application/json" },
+        method: "POST"
+      });
+
+      if (!response.ok) {
+        throw new Error(await response.text());
+      }
+
+      if (!conversationEnded) {
+        finishConversation();
+      }
+    } catch (error) {
+      errorMessage.hidden = false;
+      errorMessage.textContent = error.message || "상대방을 차단하지 못했습니다.";
+      blockButton.disabled = false;
     }
   });
 }

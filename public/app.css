@@ -322,14 +322,22 @@ main {
   margin-block: 0.75rem;
 }
 
-.chat-end-form {
+.chat-action-forms {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
   justify-content: flex-end;
   margin-block: 1rem;
 }
 
-.chat-end-form button {
+.chat-action-forms form,
+.chat-action-forms button {
   margin: 0;
+}
+
+.danger-button {
+  border-color: #b92323;
+  color: #b92323;
 }
 
 .system-message {

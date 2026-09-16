@@ -6,6 +6,7 @@ import { toNodeHandler } from "better-auth/node";
 import { signIn, signOut, signUp } from "./app/auth-actions.js";
 import { createMatchRequest, cancelMatchRequest } from "./app/match-request-actions.js";
 import {
+  blockConversationUser,
   endConversation,
   sendConversationMessage,
   sendConversationTypingStatus
@@ -337,6 +338,24 @@ async function handleRequest(request, response) {
 
     await endConversation(request, response, {
       conversationId: conversationEndPathMatch[1],
+      session
+    });
+    return;
+  }
+
+  const conversationBlockPathMatch = requestUrl.pathname.match(
+    /^\/conversations\/([^/]+)\/block$/
+  );
+
+  if (request.method === "POST" && conversationBlockPathMatch) {
+    if (!session) {
+      response.writeHead(401, { "content-type": "text/plain; charset=utf-8" });
+      response.end("로그인이 필요합니다.");
+      return;
+    }
+
+    await blockConversationUser(request, response, {
+      conversationId: conversationBlockPathMatch[1],
       session
     });
     return;

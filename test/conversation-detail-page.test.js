@@ -83,7 +83,9 @@ test("활성 대화에는 실시간 연결과 메시지 입력 폼을 표시한�
   assert.match(html, /data-realtime-chat="true"/);
   assert.match(html, /action="\/conversations\/507f1f77bcf86cd799439011\/messages"/);
   assert.match(html, /action="\/conversations\/507f1f77bcf86cd799439011\/end"/);
+  assert.match(html, /action="\/conversations\/507f1f77bcf86cd799439011\/block"/);
   assert.match(html, />채팅 종료하기<\/button>/);
+  assert.match(html, /상대방 차단하기/);
   assert.match(html, /data-typing-indicator="true"/);
   assert.match(html, /상대방이 입력 중입니다/);
   assert.match(html, /Shift \+ Enter로 전송/);
@@ -122,4 +124,5 @@ test("시스템 안내 메시지를 일반 사용자와 구분해 표시한다",
   assert.match(html, /class="message-item system-message"/);
   assert.match(html, />시스템<\/strong>/);
   assert.doesNotMatch(html, /채팅 종료하기/);
+  assert.doesNotMatch(html, /상대방 차단하기/);
 });
