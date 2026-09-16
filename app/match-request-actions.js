@@ -68,8 +68,27 @@ export async function createMatchRequest(
   }
 
   if (result.status === "MATCHED") {
-    redirect(response, "/conversations");
-    // 나중에  `/conversations/${result.conversationId}`로 바꾸기
+    redirect(
+      response,
+      `/conversations/${encodeURIComponent(result.conversationId)}`
+    );
+    return;
+  }
+
+  if (result.status === "MATCHED") {
+    if (!result.conversationId) {
+      respondWithError(
+        response,
+        500,
+        "생성된 대화방 정보를 확인할 수 없습니다."
+      );
+      return;
+    }
+
+    redirect(
+      response,
+      `/conversations/${encodeURIComponent(result.conversationId)}`
+    );
     return;
   }
 
