@@ -42,10 +42,17 @@ export function MatchRequestForm({ topics, waitingMatchRequest }) {
       <article>
         <form action="/match-requests" method="post" className="matching-form">
           <label htmlFor="topicId">주제</label>
-          <select id="topicId" name="topicId" defaultValue="" required>
-            <option value="" disabled>주제를 선택해 주세요</option>
+          <select
+            id="topicId"
+            name="topicId"
+            defaultValue={String(topics[0]._id)}
+            required
+          >
             {topics.map((topic) => (
-              <option key={String(topic._id)} value={String(topic._id)}>
+              <option
+                key={String(topic._id)}
+                value={String(topic._id)}
+              >
                 {topic.title}
               </option>
             ))}
